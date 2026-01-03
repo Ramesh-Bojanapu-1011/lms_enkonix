@@ -402,7 +402,7 @@ const SchedulePage = () => {
 
           <TabBar />
 
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+          <div className="flex-1 overflow-y-auto p-4  ">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="flex items-center gap-6">
