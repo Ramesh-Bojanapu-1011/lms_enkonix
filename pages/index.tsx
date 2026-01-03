@@ -3,15 +3,29 @@ import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
 import {
   BookOpen,
-  CheckCircle2,
   Circle,
   Clock,
-  Menu, // Added for mobile menu
+  Menu,
+  Plus, // Added for mobile menu
   Search,
   X,
 } from "lucide-react";
 import Head from "next/head";
-import { useState } from "react";
+import React, { useState } from "react";
+
+interface ResourcesProps {
+  name: string;
+  size: string;
+  desc: string;
+  type: "pdf" | "image" | "fig";
+  color: "red" | "green" | "blue";
+}
+
+interface TodoProps {
+  task: string;
+  date: string;
+  completed: boolean;
+}
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -19,11 +33,32 @@ export default function Home() {
     [key: number]: number;
   }>({});
 
-  const resources = [
-    { name: "Auto-layout.pdf", size: "4.5 Mb", type: "pdf", color: "red" },
-    { name: "Designz_file.png", size: "3.2 Mb", type: "image", color: "green" },
-    { name: "Reusez_gr_v2.fig", size: "2.5 Mb", type: "fig", color: "blue" },
-  ];
+  const [resources, setResources] = useState<ResourcesProps[]>([]);
+
+  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [newResource, setNewResource] = useState<ResourcesProps>({
+    name: "",
+    size: "",
+    desc: "",
+    type: "pdf",
+    color: "red",
+  });
+
+  const [showTodoModal, setShowTodoModal] = useState(false);
+  const [newTodo, setNewTodo] = useState<TodoProps>({
+    task: "",
+    date: "",
+    completed: false,
+  });
+
+  React.useEffect(() => {
+    fetch("/api/getresources")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched resources:", data);
+        setResources(data.resources);
+      });
+  }, []);
 
   const handleDownload = (index: number) => {
     if (downloadProgress[index] !== undefined) {
@@ -49,24 +84,79 @@ export default function Home() {
     }, 300);
   };
 
-  const todoList = [
-    {
-      task: "Human Interaction Designs",
-      date: "Tuesday, 30 June 2024",
+  const handleResourceChange = (
+    field: keyof ResourcesProps,
+    value: ResourcesProps[keyof ResourcesProps],
+  ) => {
+    setNewResource((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleResourceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newResource.name.trim()) return;
+    fetch("/api/addresources", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newResource),
+    }).then((res) => {
+      if (res.ok) {
+        setResources((prev) => [...prev, newResource]);
+        console.log("Resource submitted successfully");
+      } else {
+        console.error("Failed to submit resource");
+      }
+    });
+
+    setShowResourceModal(false);
+    setNewResource({ name: "", size: "", desc: "", type: "pdf", color: "red" });
+  };
+
+  const handleTodoChange = (
+    field: keyof TodoProps,
+    value: TodoProps[keyof TodoProps],
+  ) => {
+    setNewTodo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleTodoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodo.task.trim()) return;
+    const item: TodoProps = {
+      task: newTodo.task,
+      date: newTodo.date || "",
       completed: false,
-    },
-    {
-      task: "Design system Basics",
-      date: "Monday, 24 June 2024",
-      completed: false,
-    },
-    {
-      task: "Introduction to UI",
-      date: "Friday, 10 June 2024",
-      completed: true,
-    },
-    { task: "Basics of Figma", date: "Friday, 06 June 2024", completed: true },
-  ];
+    };
+    fetch("/api/addtodolist", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(item),
+    }).then((res) => {
+      if (res.ok) {
+        setTodoList((prev) => [...prev, item]);
+        console.log("Todo item submitted successfully");
+      } else {
+        console.error("Failed to submit todo item");
+      }
+    });
+
+    setShowTodoModal(false);
+    setNewTodo({ task: "", date: "", completed: false });
+  };
+
+  const [todoList, setTodoList] = React.useState<TodoProps[]>([]);
+
+  React.useEffect(() => {
+    fetch("/api/gettodolist")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched todo list:", data);
+        setTodoList(data.todolist);
+      });
+  }, []);
 
   const classes = [
     {
@@ -96,6 +186,30 @@ export default function Home() {
     { month: "May", study: 25, onlineTest: 12 },
   ];
 
+  const handleTodoToggle = (task: string) => {
+    fetch("/api/updatetodolist", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        task: task,
+        completed: !todoList.find((item) => item.task === task)?.completed,
+      }),
+    }).then((res) => {
+      if (res.ok) {
+        setTodoList((prev) =>
+          prev.map((item) =>
+            item.task === task ? { ...item, completed: !item.completed } : item,
+          ),
+        );
+        console.log("Todo item updated successfully");
+      } else {
+        console.error("Failed to update todo item");
+      }
+    });
+  };
+
   return (
     <>
       <Head>
@@ -103,11 +217,11 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
         {/* Sidebar - Responsive handling */}
         <div
           className={`
-          fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out bg-white lg:relative lg:translate-x-0
+          fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out bg-white dark:bg-gray-900 lg:relative lg:translate-x-0
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
         >
@@ -115,7 +229,7 @@ export default function Home() {
           {/* Close button for mobile */}
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden absolute top-4 right-4 p-2 text-gray-500"
+            className="lg:hidden absolute top-4 right-4 p-2 text-gray-500 dark:text-gray-400"
           >
             <X size={24} />
           </button>
@@ -131,10 +245,10 @@ export default function Home() {
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b">
+          <div className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b dark:border-gray-700">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 text-gray-600"
+              className="p-2 text-gray-600 dark:text-gray-300"
             >
               <Menu size={24} />
             </button>
@@ -147,10 +261,10 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
             {/* Greeting */}
             <div className="mb-8">
-              <h1 className="text-2xl md:text-4xl flex gap-2 items-center font-bold text-gray-800 mb-2">
+              <h1 className="text-2xl md:text-4xl flex gap-2 items-center font-bold text-gray-800 dark:text-gray-100 mb-2">
                 Hello Harsh <span className="">👋</span>
               </h1>
-              <p className="text-gray-500 text-sm md:text-base">
+              <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
                 Let's learn something new today!
               </p>
             </div>
@@ -158,14 +272,16 @@ export default function Home() {
             {/* Top Row - Stack on mobile, 3 cols on large */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
               {/* Recent Enrolled Course */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                  Recent enrolled course
-                </h3>
-                <div className="rounded-2xl p-3 bg-gray-50">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-3 shadow-sm">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="flex justify-between">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                    Recent enrolled course
+                  </h3>
+                </div>
+                <div className="rounded-2xl p-3 bg-gray-50 dark:bg-gray-800">
+                  <div className="w-12 h-12 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center mb-3 shadow-sm">
                     <svg
-                      className="text-[#000000]"
+                      className="text-[#000000] dark:text-white"
                       width={30}
                       height={30}
                       viewBox="0 0 512 512"
@@ -176,11 +292,11 @@ export default function Home() {
                       />
                     </svg>
                   </div>
-                  <h4 className="font-semibold text-gray-800 mb-2">
+                  <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">
                     Product Design Course
                   </h4>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-orange-500"
                         style={{ width: "60%" }}
@@ -194,10 +310,20 @@ export default function Home() {
               </div>
 
               {/* Your Resources */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                  Your Resources
-                </h3>
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="flex justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                    Your Resources
+                  </h3>
+                  <button
+                    type="button"
+                    aria-label="Add resource"
+                    onClick={() => setShowResourceModal(true)}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
                 <div className="space-y-4">
                   {resources.map((resource, idx) => (
                     <div key={idx} className="flex flex-col gap-2">
@@ -205,11 +331,11 @@ export default function Home() {
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             className={`p-2 rounded-lg shrink-0 ${
-                              resource.color === "red"
-                                ? "bg-red-50"
-                                : resource.color === "green"
-                                  ? "bg-green-50"
-                                  : "bg-blue-50"
+                              resource.type === "pdf"
+                                ? "bg-red-50 dark:bg-red-950"
+                                : resource.type === "image"
+                                  ? "bg-green-50 dark:bg-green-950"
+                                  : "bg-blue-50 dark:bg-blue-950"
                             }`}
                           >
                             {resource.type === "pdf" && (
@@ -268,16 +394,21 @@ export default function Home() {
                             )}
                           </div>
                           <div className="truncate">
-                            <p className="text-sm font-medium text-gray-800 truncate">
-                              {resource.name}
-                            </p>
-                            {downloadProgress[idx] === undefined && (
-                              <p className="text-xs text-gray-500">
+                            <div className="flex justify-between">
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                                {resource.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {resource.size} MB
                               </p>
-                            )}
+                              {downloadProgress[idx] === undefined && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {resource.desc}
+                                </p>
+                              )}
+                            </div>
                             {downloadProgress[idx] !== undefined && (
-                              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                                 <div
                                   className="bg-orange-500 h-full rounded-full transition-all duration-300 ease-out"
                                   style={{ width: `${downloadProgress[idx]}%` }}
@@ -306,11 +437,150 @@ export default function Home() {
               </div>
             </div>
 
+            {showResourceModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      Add Resource
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowResourceModal(false)}
+                      className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                      aria-label="Close add resource"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <form
+                    onSubmit={handleResourceSubmit}
+                    className="p-4 space-y-4"
+                  >
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        Add file
+                      </label>
+                      <input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleResourceChange("name", file.name);
+                            handleResourceChange(
+                              "size",
+                              (file.size / (1024 * 1024)).toFixed(2) + " Mb",
+                            );
+                          }
+                        }}
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        File Name
+                      </label>
+                      <input
+                        value={newResource.name}
+                        onChange={(e) =>
+                          handleResourceChange("name", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="File name"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          Size
+                        </label>
+                        <input
+                          value={newResource.size}
+                          onChange={(e) =>
+                            handleResourceChange("size", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          placeholder="e.g. 2.5 Mb"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          Type
+                        </label>
+                        <select
+                          value={newResource.type}
+                          onChange={(e) =>
+                            handleResourceChange(
+                              "type",
+                              e.target.value as ResourcesProps["type"],
+                            )
+                          }
+                          className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                          <option value="pdf">PDF</option>
+                          <option value="image">Image</option>
+                          <option value="fig">Doc</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        Color
+                      </label>
+                      <select
+                        value={newResource.color}
+                        onChange={(e) =>
+                          handleResourceChange(
+                            "color",
+                            e.target.value as ResourcesProps["color"],
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="red">Red</option>
+                        <option value="green">Green</option>
+                        <option value="blue">Blue</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        Description
+                      </label>
+                      <textarea
+                        value={newResource.desc}
+                        onChange={(e) =>
+                          handleResourceChange("desc", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        rows={3}
+                        placeholder="Optional description"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowResourceModal(false)}
+                        className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {/* Middle Row - Stack on mobile */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
               {/* Hours Spent */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 overflow-hidden">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
                   Hours Spent
                 </h3>
                 <div className="relative h-48 w-full">
@@ -323,7 +593,7 @@ export default function Home() {
                         <div className="flex group gap-1 items-end w-full px-1">
                           {/* tooltip */}
                           <div>
-                            <div className="absolute top-6 w-16 p-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                            <div className="absolute top-6 w-16 p-1 bg-gray-800 dark:bg-gray-700 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity text-center">
                               Study: {data.study} hrs
                               <br />
                               Online Test: {data.onlineTest} hrs
@@ -334,11 +604,11 @@ export default function Home() {
                             style={{ height: `${data.study * 1.5}px` }}
                           ></div>
                           <div
-                            className="bg-orange-200 rounded-t w-1/2"
+                            className="bg-orange-200 dark:bg-orange-300 rounded-t w-1/2"
                             style={{ height: `${data.onlineTest * 1.5}px` }}
                           ></div>
                         </div>
-                        <span className="text-[10px] text-gray-500 mt-2">
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
                           {data.month}
                         </span>
                       </div>
@@ -348,13 +618,15 @@ export default function Home() {
               </div>
 
               {/* Performance */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Performance
                   </h3>
-                  <select className="text-[10px] border border-gray-200 rounded px-2 py-1">
+                  <select className="text-[10px] border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 rounded px-2 py-1">
                     <option>Monthly</option>
+                    <option>Weekly</option>
+                    <option>Yearly</option>
                   </select>
                 </div>
                 <div className="flex flex-col items-center justify-center">
@@ -369,6 +641,7 @@ export default function Home() {
                         cy="50"
                         r="40"
                         stroke="#FED7AA"
+                        className="dark:stroke-orange-900"
                         strokeWidth="8"
                         fill="none"
                       />
@@ -384,46 +657,74 @@ export default function Home() {
                         strokeLinecap="round"
                       />
                     </svg>
-                    <span className="absolute text-xl font-bold text-gray-800">
+                    <span className="absolute text-xl font-bold text-gray-800 dark:text-gray-100">
                       8.9
                     </span>
                   </div>
-                  <p className="text-xs text-center text-gray-500 mt-2">
+                  <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
                     Assignment Submission Grade
                   </p>
                 </div>
               </div>
 
               {/* To Do List */}
-              <div className="md:col-span-2 lg:col-span-1 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                  To do List
-                </h3>
+              <div className="md:col-span-2 lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="flex justify-between w-full">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                    To do List
+                  </h3>
+                  <button
+                    type="button"
+                    aria-label="Add todo"
+                    onClick={() => setShowTodoModal(true)}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 dark:text-gray-500"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
                 <div className="space-y-3">
                   {todoList.map((item, idx) => (
                     <div key={idx} className="flex items-start gap-3">
-                      <div
-                        className={`mt-1 shrink-0 ${
-                          item.completed ? "text-orange-500" : "text-gray-300"
-                        }`}
-                      >
-                        {item.completed ? (
-                          <CheckCircle2 size={18} />
-                        ) : (
-                          <Circle size={18} />
-                        )}
-                      </div>
+                      <label className="mt-1 shrink-0 inline-flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={item.completed}
+                          onChange={() => handleTodoToggle(item.task)}
+                          className="peer sr-only"
+                        />
+                        <span
+                          className="h-5 w-5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm transition-all duration-200 peer-checked:bg-linear-to-br peer-checked:from-orange-500 peer-checked:to-amber-500 peer-checked:border-orange-500 peer-focus:ring-2 peer-focus:ring-orange-200 dark:peer-focus:ring-orange-800"
+                          aria-hidden="true"
+                        >
+                          <svg
+                            className="w-3 h-3 text-white opacity-0 transition-opacity duration-150 peer-checked:opacity-100"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M5 10.5L8.5 14L15 6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </label>
                       <div className="min-w-0">
                         <p
                           className={`text-sm font-medium truncate ${
                             item.completed
-                              ? "text-gray-400 line-through"
-                              : "text-gray-800"
+                              ? "text-gray-400 dark:text-gray-500 line-through"
+                              : "text-gray-800 dark:text-gray-200"
                           }`}
                         >
                           {item.task}
                         </p>
-                        <p className="text-[10px] text-gray-400">{item.date}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                          {item.date}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -431,11 +732,74 @@ export default function Home() {
               </div>
             </div>
 
+            {showTodoModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      Add To-Do
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowTodoModal(false)}
+                      className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                      aria-label="Close add todo"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <form onSubmit={handleTodoSubmit} className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        Task
+                      </label>
+                      <input
+                        value={newTodo.task}
+                        onChange={(e) =>
+                          handleTodoChange("task", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        placeholder="Enter task"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={newTodo.date}
+                        onChange={(e) =>
+                          handleTodoChange("date", e.target.value)
+                        }
+                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowTodoModal(false)}
+                        className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {/* Bottom Row - Classes and Lessons */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Recent Enrolled Classes
                   </h3>
                   <Search size={18} className="text-gray-400" />
@@ -446,14 +810,16 @@ export default function Home() {
                       key={idx}
                       className={`p-4 rounded-lg border ${
                         cls.active
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200"
+                          ? "border-orange-500 bg-orange-50 dark:bg-orange-950"
+                          : "border-gray-200 dark:border-gray-700"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            cls.active ? "bg-white" : "bg-gray-100"
+                            cls.active
+                              ? "bg-white dark:bg-gray-800"
+                              : "bg-gray-100 dark:bg-gray-800"
                           }`}
                         >
                           <BookOpen
@@ -466,12 +832,14 @@ export default function Home() {
                         <div className="flex-1 min-w-0">
                           <h4
                             className={`text-sm font-semibold truncate ${
-                              cls.active ? "text-orange-500" : "text-gray-800"
+                              cls.active
+                                ? "text-orange-500"
+                                : "text-gray-800 dark:text-gray-200"
                             }`}
                           >
                             {cls.name}
                           </h4>
-                          <div className="flex flex-wrap gap-3 mt-1 text-[10px] text-gray-500">
+                          <div className="flex flex-wrap gap-3 mt-1 text-[10px] text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Clock size={12} /> {cls.hours}
                             </span>
@@ -486,25 +854,25 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
                   Upcoming Lessons
                 </h3>
                 <div className="space-y-3">
                   {upcomingLessons.map((lesson, idx) => (
                     <div
                       key={idx}
-                      className="p-4 border border-gray-100 rounded-lg flex justify-between items-center"
+                      className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg flex justify-between items-center"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                        <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500">
                           <Circle size={20} />
                         </div>
                         <div>
-                          <h4 className="text-sm font-semibold text-gray-800">
+                          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                             {lesson.name}
                           </h4>
-                          <p className="text-[10px] text-gray-500">
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
                             {lesson.time}
                           </p>
                         </div>

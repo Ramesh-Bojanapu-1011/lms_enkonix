@@ -67,21 +67,23 @@ const Calendar = (props: Props) => {
   };
 
   const dates = getDaysInMonth(currentDate);
-  const monthYear = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  const monthYear = `${
+    monthNames[currentDate.getMonth()]
+  } ${currentDate.getFullYear()}`;
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-2xl">
+    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-2xl   ">
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goToPreviousMonth}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
         >
           <ChevronLeft size={18} />
         </button>
         <h3 className="text-sm font-semibold text-orange-500">{monthYear}</h3>
         <button
           onClick={goToNextMonth}
-          className="text-gray-400 hover:text-gray-600 cursor-pointer"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
         >
           <ChevronRight size={18} />
         </button>
@@ -91,7 +93,7 @@ const Calendar = (props: Props) => {
         {days.map((day, idx) => (
           <div
             key={idx}
-            className="text-center text-xs text-gray-400 font-medium mb-2"
+            className="text-center text-xs text-gray-400 dark:text-gray-500 font-medium mb-2"
           >
             {day}
           </div>
@@ -105,10 +107,10 @@ const Calendar = (props: Props) => {
                 : date === 4
                   ? "bg-orange-500 text-white rounded-full font-semibold"
                   : date === 8
-                    ? "bg-orange-100 text-orange-500 rounded-full font-semibold"
+                    ? "bg-orange-100 dark:bg-orange-950 text-orange-500 dark:text-orange-400 rounded-full font-semibold"
                     : isToday(date)
-                      ? "bg-blue-100 text-blue-600 rounded-full font-semibold"
-                      : "text-gray-700 hover:bg-gray-100 rounded-full"
+                      ? "bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-full font-semibold"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
             }`}
           >
             {date || ""}

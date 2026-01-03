@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Search, Hash, Bell, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown, Search } from "lucide-react";
+import { useState } from "react";
+import { ModeToggle } from "./theme/ModeToggle";
 
 type Props = {};
 
@@ -7,16 +8,16 @@ const TabBar = (props: Props) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between h-16.25">
+    <div className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between h-16.25">
       {/* Search Bar */}
-      <div className="flex items-center gap-3 border border-gray-300 rounded-lg px-4 py-2 w-72">
+      <div className="flex items-center gap-3 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 w-72 dark:bg-gray-800">
         <Search size={18} className="text-orange-500" />
         <input
           type="text"
           placeholder="Search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 outline-none text-sm text-gray-600 placeholder-gray-400"
+          className="flex-1 outline-none text-sm text-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent"
         />
         <div className="flex items-center gap-2">
           <svg
@@ -70,15 +71,19 @@ const TabBar = (props: Props) => {
       {/* Right Side - Notifications & User Profile */}
       <div className="flex items-center gap-4">
         {/* Notification Bell */}
-        <button className="p-2 hover:bg-gray-100 rounded-lg relative">
+        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative">
           <div>
-            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></div>
+            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></div>
           </div>
-          <Bell size={20} className="text-gray-600" />
+          <Bell size={20} className="text-gray-600 dark:text-gray-300" />
         </button>
 
+        <div>
+          <ModeToggle />
+        </div>
+
         {/* User Profile */}
-        <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg">
+        <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded-lg">
           <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
             <img
               src="/api/placeholder/32/32"
@@ -86,8 +91,10 @@ const TabBar = (props: Props) => {
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="font-medium text-gray-800">Harsh</span>
-          <ChevronDown size={16} className="text-gray-600" />
+          <span className="font-medium text-gray-800 dark:text-gray-200">
+            Harsh
+          </span>
+          <ChevronDown size={16} className="text-gray-600 dark:text-gray-400" />
         </div>
       </div>
     </div>
