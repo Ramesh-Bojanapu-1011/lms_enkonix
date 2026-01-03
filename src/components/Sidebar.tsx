@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -13,7 +13,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 type MenuItem = {
   icon: React.ElementType;
@@ -24,21 +24,21 @@ type MenuItem = {
 type Props = {};
 
 const Sidebar = (props: Props) => {
-  const [activeItem, setActiveItem] = useState('');
+  const [activeItem, setActiveItem] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: FileText, label: 'Assignments', path: '/assignments' },
-    { icon: Calendar, label: 'Schedule', path: '/schedule' },
-    { icon: Video, label: 'Recordings', path: '/recordings' },
-    { icon: MessageSquare, label: 'Discussions', path: '/discussions' },
-    { icon: FolderOpen, label: 'Resources', path: '/resources' },
-    { icon: StickyNote, label: 'Notes', path: '/notes' },
-    { icon: Download, label: 'Downloads', path: '/downloads' },
-    { icon: Users, label: 'Classes', path: '/classes' },
-    { icon: GraduationCap, label: 'Courses', path: '/courses' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: FileText, label: "Assignments", path: "/assignments" },
+    { icon: Calendar, label: "Schedule", path: "/schedule" },
+    { icon: Video, label: "Recordings", path: "/recordings" },
+    { icon: MessageSquare, label: "Discussions", path: "/discussions" },
+    { icon: FolderOpen, label: "Resources", path: "/resources" },
+    { icon: StickyNote, label: "Notes", path: "/notes" },
+    { icon: Download, label: "Downloads", path: "/downloads" },
+    { icon: Users, label: "Classes", path: "/classes" },
+    { icon: GraduationCap, label: "Courses", path: "/courses" },
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
   React.useEffect(() => {
@@ -52,14 +52,14 @@ const Sidebar = (props: Props) => {
   return (
     <div
       className={`h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-80'
+        isCollapsed ? "w-20" : "w-80"
       }`}
     >
       {/* Header */}
       <div className="p-6 flex items-center justify-between border-b border-gray-200">
         <h1
           className={`text-xl font-bold tracking-wider transition-opacity duration-300 ${
-            isCollapsed ? 'opacity-0 w-0' : 'opacity-100'
+            isCollapsed ? "opacity-0 w-0" : "opacity-100"
           }`}
         >
           {!isCollapsed && (
@@ -112,20 +112,20 @@ const Sidebar = (props: Props) => {
               }}
               className={`
                 w-full flex items-center ${
-                  isCollapsed ? 'justify-center p-3' : 'gap-4 px-5 py-3'
+                  isCollapsed ? "justify-center p-3" : "gap-4 px-5 py-3"
                 }  rounded-lg text-left transition-all
                 ${
                   isActive
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? "bg-orange-500 text-white shadow-md"
+                    : "text-gray-600 hover:bg-gray-100"
                 }
               `}
-              title={isCollapsed ? item.label : ''}
+              title={isCollapsed ? item.label : ""}
             >
               <Icon size={20} />
               <span
                 className={`font-medium transition-opacity duration-300 ${
-                  isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                  isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
                 }`}
               >
                 {!isCollapsed && item.label}

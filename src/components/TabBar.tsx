@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Search, Hash, Bell, ChevronDown } from 'lucide-react';
+import React, { useState } from "react";
+import { Search, Hash, Bell, ChevronDown } from "lucide-react";
 
 type Props = {};
 
 const TabBar = (props: Props) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <div className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between h-16.25">

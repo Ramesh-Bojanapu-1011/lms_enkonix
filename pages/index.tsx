@@ -1,6 +1,6 @@
-import Calendar from '@/components/Calendar';
-import Sidebar from '@/components/Sidebar';
-import TabBar from '@/components/TabBar';
+import Calendar from "@/components/Calendar";
+import Sidebar from "@/components/Sidebar";
+import TabBar from "@/components/TabBar";
 import {
   BookOpen,
   CheckCircle2,
@@ -8,11 +8,10 @@ import {
   Clock,
   Menu, // Added for mobile menu
   Search,
-  Target,
-  X, // Added for closing mobile menu
-} from 'lucide-react';
-import Head from 'next/head';
-import { useState } from 'react';
+  X,
+} from "lucide-react";
+import Head from "next/head";
+import { useState } from "react";
 
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,9 +20,9 @@ export default function Home() {
   }>({});
 
   const resources = [
-    { name: 'Auto-layout.pdf', size: '4.5 Mb', type: 'pdf', color: 'red' },
-    { name: 'Designz_file.png', size: '3.2 Mb', type: 'image', color: 'green' },
-    { name: 'Reusez_gr_v2.fig', size: '2.5 Mb', type: 'fig', color: 'blue' },
+    { name: "Auto-layout.pdf", size: "4.5 Mb", type: "pdf", color: "red" },
+    { name: "Designz_file.png", size: "3.2 Mb", type: "image", color: "green" },
+    { name: "Reusez_gr_v2.fig", size: "2.5 Mb", type: "fig", color: "blue" },
   ];
 
   const handleDownload = (index: number) => {
@@ -52,49 +51,49 @@ export default function Home() {
 
   const todoList = [
     {
-      task: 'Human Interaction Designs',
-      date: 'Tuesday, 30 June 2024',
+      task: "Human Interaction Designs",
+      date: "Tuesday, 30 June 2024",
       completed: false,
     },
     {
-      task: 'Design system Basics',
-      date: 'Monday, 24 June 2024',
+      task: "Design system Basics",
+      date: "Monday, 24 June 2024",
       completed: false,
     },
     {
-      task: 'Introduction to UI',
-      date: 'Friday, 10 June 2024',
+      task: "Introduction to UI",
+      date: "Friday, 10 June 2024",
       completed: true,
     },
-    { task: 'Basics of Figma', date: 'Friday, 06 June 2024', completed: true },
+    { task: "Basics of Figma", date: "Friday, 06 June 2024", completed: true },
   ];
 
   const classes = [
     {
-      name: 'User Experience (UX) Design',
-      hours: '5:30hrs',
-      lessons: '05 Lessons',
+      name: "User Experience (UX) Design",
+      hours: "5:30hrs",
+      lessons: "05 Lessons",
       active: true,
     },
     {
-      name: 'Visual Design and Branding',
-      hours: '4:00hrs',
-      lessons: '03 Lessons',
+      name: "Visual Design and Branding",
+      hours: "4:00hrs",
+      lessons: "03 Lessons",
       active: false,
     },
   ];
 
   const upcomingLessons = [
-    { name: 'UX Design Fundamentals', time: '5:30pm' },
-    { name: 'Interaction Design', time: '9:00pm' },
+    { name: "UX Design Fundamentals", time: "5:30pm" },
+    { name: "Interaction Design", time: "9:00pm" },
   ];
 
   const hoursData = [
-    { month: 'Jan', study: 45, onlineTest: 20 },
-    { month: 'Feb', study: 35, onlineTest: 15 },
-    { month: 'Mar', study: 60, onlineTest: 25 },
-    { month: 'Apr', study: 40, onlineTest: 18 },
-    { month: 'May', study: 25, onlineTest: 12 },
+    { month: "Jan", study: 45, onlineTest: 20 },
+    { month: "Feb", study: 35, onlineTest: 15 },
+    { month: "Mar", study: 60, onlineTest: 25 },
+    { month: "Apr", study: 40, onlineTest: 18 },
+    { month: "May", study: 25, onlineTest: 12 },
   ];
 
   return (
@@ -109,7 +108,7 @@ export default function Home() {
         <div
           className={`
           fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out bg-white lg:relative lg:translate-x-0
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
         >
           <Sidebar />
@@ -166,7 +165,7 @@ export default function Home() {
                 <div className="rounded-2xl p-3 bg-gray-50">
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-3 shadow-sm">
                     <svg
-                      className="text-orange-500"
+                      className="text-[#000000]"
                       width={30}
                       height={30}
                       viewBox="0 0 512 512"
@@ -184,7 +183,7 @@ export default function Home() {
                     <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-orange-500"
-                        style={{ width: '60%' }}
+                        style={{ width: "60%" }}
                       ></div>
                     </div>
                     <span className="ml-3 text-xs font-semibold text-orange-500 whitespace-nowrap">
@@ -201,48 +200,101 @@ export default function Home() {
                 </h3>
                 <div className="space-y-4">
                   {resources.map((resource, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`p-2 rounded-lg shrink-0 ${
-                            resource.color === 'red'
-                              ? 'bg-red-50'
-                              : resource.color === 'green'
-                                ? 'bg-green-50'
-                                : 'bg-blue-50'
-                          }`}
+                    <div key={idx} className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`p-2 rounded-lg shrink-0 ${
+                              resource.color === "red"
+                                ? "bg-red-50"
+                                : resource.color === "green"
+                                  ? "bg-green-50"
+                                  : "bg-blue-50"
+                            }`}
+                          >
+                            {resource.type === "pdf" && (
+                              <svg
+                                width="21"
+                                height="28"
+                                viewBox="0 0 21 28"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M3.43108 0H12.5114C12.9664 9.71638e-05 13.4027 0.180905 13.7243 0.502653L20.0838 6.86216C20.4056 7.18382 20.5864 7.6201 20.5865 8.07505V24.0176C20.5865 24.9276 20.225 25.8003 19.5815 26.4437C18.9381 27.0872 18.0654 27.4487 17.1554 27.4487H3.43108C2.5211 27.4487 1.64839 27.0872 1.00494 26.4437C0.361488 25.8003 0 24.9276 0 24.0176V3.43108C0 2.5211 0.361488 1.64839 1.00494 1.00494C1.64839 0.361488 2.5211 0 3.43108 0V0ZM12.8666 2.57331V6.00439C12.8666 6.45938 13.0473 6.89574 13.369 7.21746C13.6908 7.53919 14.1271 7.71993 14.5821 7.71993H18.0132L12.8666 2.57331Z"
+                                  fill="#F1351B"
+                                />
+                                <path
+                                  d="M4.84801 17.937C4.69361 17.937 4.56666 17.8924 4.46716 17.8032C4.37109 17.7106 4.32305 17.5973 4.32305 17.4635C4.32305 17.3263 4.37109 17.2113 4.46716 17.1187C4.56666 17.0261 4.69361 16.9797 4.84801 16.9797C4.99898 16.9797 5.12249 17.0261 5.21856 17.1187C5.31807 17.2113 5.36782 17.3263 5.36782 17.4635C5.36782 17.5973 5.31807 17.7106 5.21856 17.8032C5.12249 17.8924 4.99898 17.937 4.84801 17.937ZM8.89957 15.4461C8.89957 15.6553 8.85153 15.8475 8.75546 16.0225C8.65939 16.194 8.51185 16.333 8.31285 16.4393C8.11385 16.5457 7.86681 16.5989 7.57174 16.5989H7.0262V17.8958H6.14612V14.2829H7.57174C7.85995 14.2829 8.10356 14.3327 8.30256 14.4322C8.50156 14.5317 8.65081 14.6689 8.75031 14.8439C8.84982 15.0189 8.89957 15.2196 8.89957 15.4461ZM7.50483 15.899C7.67295 15.899 7.79819 15.8595 7.88054 15.7806C7.96288 15.7017 8.00405 15.5902 8.00405 15.4461C8.00405 15.3019 7.96288 15.1904 7.88054 15.1115C7.79819 15.0326 7.67295 14.9931 7.50483 14.9931H7.0262V15.899H7.50483ZM10.9686 14.2829C11.3495 14.2829 11.6823 14.3584 11.9671 14.5094C12.2519 14.6603 12.4714 14.8731 12.6258 15.1475C12.7837 15.4186 12.8626 15.7325 12.8626 16.0894C12.8626 16.4428 12.7837 16.7567 12.6258 17.0312C12.4714 17.3057 12.2501 17.5184 11.9619 17.6694C11.6771 17.8204 11.346 17.8958 10.9686 17.8958H9.61507V14.2829H10.9686ZM10.912 17.1341C11.2448 17.1341 11.5039 17.0432 11.6892 16.8614C11.8744 16.6795 11.9671 16.4222 11.9671 16.0894C11.9671 15.7566 11.8744 15.4975 11.6892 15.3122C11.5039 15.127 11.2448 15.0343 10.912 15.0343H10.4951V17.1341H10.912ZM15.9637 14.2829V14.988H14.4918V15.7497H15.5932V16.4342H14.4918V17.8958H13.6117V14.2829H15.9637Z"
+                                  fill="white"
+                                />
+                              </svg>
+                            )}
+                            {resource.type === "image" && (
+                              <svg
+                                width="21"
+                                height="28"
+                                viewBox="0 0 21 28"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M3.43108 0H12.5114C12.9664 9.71638e-05 13.4027 0.180905 13.7243 0.502653L20.0838 6.86216C20.4056 7.18382 20.5864 7.6201 20.5865 8.07505V24.0176C20.5865 24.9276 20.225 25.8003 19.5815 26.4437C18.9381 27.0872 18.0654 27.4487 17.1554 27.4487H3.43108C2.5211 27.4487 1.64839 27.0872 1.00494 26.4437C0.361488 25.8003 0 24.9276 0 24.0176V3.43108C0 2.5211 0.361488 1.64839 1.00494 1.00494C1.64839 0.361488 2.5211 0 3.43108 0V0ZM12.8666 2.57331V6.00439C12.8666 6.45938 13.0473 6.89574 13.369 7.21746C13.6908 7.53919 14.1271 7.71993 14.5821 7.71993H18.0132L12.8666 2.57331Z"
+                                  fill="#27AE60"
+                                />
+                                <path
+                                  d="M4.3629 17.0837C4.2085 17.0837 4.08155 17.0391 3.98205 16.9499C3.88598 16.8573 3.83795 16.744 3.83795 16.6102C3.83795 16.473 3.88598 16.358 3.98205 16.2654C4.08155 16.1728 4.2085 16.1264 4.3629 16.1264C4.51387 16.1264 4.63739 16.1728 4.73346 16.2654C4.83296 16.358 4.88271 16.473 4.88271 16.6102C4.88271 16.744 4.83296 16.8573 4.73346 16.9499C4.63739 17.0391 4.51387 17.0837 4.3629 17.0837ZM6.54109 14.5773C6.62687 14.4435 6.74524 14.3354 6.89621 14.2531C7.04717 14.1707 7.22387 14.1296 7.42631 14.1296C7.66305 14.1296 7.87749 14.1896 8.06964 14.3097C8.26178 14.4298 8.41274 14.6013 8.52254 14.8243C8.63576 15.0474 8.69238 15.3064 8.69238 15.6015C8.69238 15.8966 8.63576 16.1573 8.52254 16.3838C8.41274 16.6068 8.26178 16.7801 8.06964 16.9036C7.87749 17.0237 7.66305 17.0837 7.42631 17.0837C7.2273 17.0837 7.0506 17.0425 6.89621 16.9602C6.74524 16.8778 6.62687 16.7715 6.54109 16.6411V18.4115H5.66102V14.1707H6.54109V14.5773ZM7.79686 15.6015C7.79686 15.3819 7.7351 15.2103 7.61159 15.0868C7.4915 14.9599 7.34225 14.8964 7.16383 14.8964C6.98884 14.8964 6.83959 14.9599 6.71607 15.0868C6.59599 15.2138 6.53594 15.387 6.53594 15.6066C6.53594 15.8262 6.59599 15.9995 6.71607 16.1264C6.83959 16.2534 6.98884 16.3169 7.16383 16.3169C7.33881 16.3169 7.48807 16.2534 7.61159 16.1264C7.7351 15.9961 7.79686 15.8211 7.79686 15.6015ZM11.1613 14.1398C11.4975 14.1398 11.7651 14.2496 11.9641 14.4692C12.1666 14.6854 12.2678 14.9839 12.2678 15.3647V17.0425H11.3929V15.4831C11.3929 15.291 11.3431 15.1417 11.2436 15.0354C11.1441 14.929 11.0103 14.8758 10.8422 14.8758C10.6741 14.8758 10.5402 14.929 10.4407 15.0354C10.3412 15.1417 10.2915 15.291 10.2915 15.4831V17.0425H9.41142V14.1707H10.2915V14.5516C10.3807 14.4246 10.5008 14.3251 10.6518 14.2531C10.8027 14.1776 10.9726 14.1398 11.1613 14.1398ZM14.2278 14.1296C14.4302 14.1296 14.6069 14.1707 14.7579 14.2531C14.9123 14.3354 15.0306 14.4435 15.113 14.5773V14.1707H15.9931V17.0374C15.9931 17.3016 15.9399 17.54 15.8335 17.7528C15.7306 17.9689 15.571 18.1405 15.3549 18.2674C15.1422 18.3944 14.8762 18.4579 14.5572 18.4579C14.1317 18.4579 13.7869 18.3566 13.5227 18.1542C13.2585 17.9552 13.1075 17.6842 13.0698 17.341H13.9396C13.967 17.4508 14.0322 17.5366 14.1351 17.5984C14.2381 17.6636 14.365 17.6962 14.516 17.6962C14.6978 17.6962 14.8419 17.643 14.9483 17.5366C15.0581 17.4337 15.113 17.2673 15.113 17.0374V16.6308C15.0272 16.7646 14.9088 16.8744 14.7579 16.9602C14.6069 17.0425 14.4302 17.0837 14.2278 17.0837C13.991 17.0837 13.7766 17.0237 13.5844 16.9036C13.3923 16.7801 13.2396 16.6068 13.1264 16.3838C13.0166 16.1573 12.9617 15.8966 12.9617 15.6015C12.9617 15.3064 13.0166 15.0474 13.1264 14.8243C13.2396 14.6013 13.3923 14.4298 13.5844 14.3097C13.7766 14.1896 13.991 14.1296 14.2278 14.1296ZM15.113 15.6066C15.113 15.387 15.0512 15.2138 14.9277 15.0868C14.8076 14.9599 14.6601 14.8964 14.4851 14.8964C14.3101 14.8964 14.1609 14.9599 14.0373 15.0868C13.9173 15.2103 13.8572 15.3819 13.8572 15.6015C13.8572 15.8211 13.9173 15.9961 14.0373 16.1264C14.1609 16.2534 14.3101 16.3169 14.4851 16.3169C14.6601 16.3169 14.8076 16.2534 14.9277 16.1264C15.0512 15.9995 15.113 15.8262 15.113 15.6066Z"
+                                  fill="white"
+                                />
+                              </svg>
+                            )}
+                            {resource.type === "fig" && (
+                              <svg
+                                width="21"
+                                height="28"
+                                viewBox="0 0 21 28"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M3.43108 0H12.5114C12.9664 9.71638e-05 13.4027 0.180905 13.7243 0.502653L20.0838 6.86216C20.4056 7.18382 20.5864 7.6201 20.5865 8.07505V24.0176C20.5865 24.9276 20.225 25.8003 19.5815 26.4437C18.9381 27.0872 18.0654 27.4487 17.1554 27.4487H3.43108C2.5211 27.4487 1.64839 27.0872 1.00494 26.4437C0.361488 25.8003 0 24.9276 0 24.0176V3.43108C0 2.5211 0.361488 1.64839 1.00494 1.00494C1.64839 0.361488 2.5211 0 3.43108 0V0ZM12.8666 2.57331V6.00439C12.8666 6.45938 13.0473 6.89574 13.369 7.21746C13.6908 7.53919 14.1271 7.71993 14.5821 7.71993H18.0132L12.8666 2.57331Z"
+                                  fill="#1294F2"
+                                />
+                                <path
+                                  d="M6.02403 17.937C5.86963 17.937 5.74268 17.8924 5.64318 17.8032C5.54711 17.7106 5.49908 17.5974 5.49908 17.4636C5.49908 17.3263 5.54711 17.2114 5.64318 17.1187C5.74268 17.0261 5.86963 16.9798 6.02403 16.9798C6.175 16.9798 6.29852 17.0261 6.39459 17.1187C6.49409 17.2114 6.54384 17.3263 6.54384 17.4636C6.54384 17.5974 6.49409 17.7106 6.39459 17.8032C6.29852 17.8924 6.175 17.937 6.02403 17.937ZM8.7632 15.7549H8.28971V17.8959H7.40964V15.7549H7.09055V15.0241H7.40964V14.9417C7.40964 14.5883 7.51086 14.3207 7.71329 14.1388C7.91573 13.9536 8.21251 13.8609 8.60366 13.8609C8.66885 13.8609 8.71688 13.8626 8.74776 13.8661V14.6123C8.57964 14.602 8.46127 14.6261 8.39265 14.6844C8.32402 14.7427 8.28971 14.8474 8.28971 14.9983V15.0241H8.7632V15.7549ZM9.87668 14.7256C9.72228 14.7256 9.59533 14.6809 9.49583 14.5917C9.39976 14.4991 9.35173 14.3859 9.35173 14.2521C9.35173 14.1148 9.39976 14.0016 9.49583 13.9124C9.59533 13.8197 9.72228 13.7734 9.87668 13.7734C10.0277 13.7734 10.1512 13.8197 10.2472 13.9124C10.3467 14.0016 10.3965 14.1148 10.3965 14.2521C10.3965 14.3859 10.3467 14.4991 10.2472 14.5917C10.1512 14.6809 10.0277 14.7256 9.87668 14.7256ZM10.3141 15.0241V17.8959H9.43407V15.0241H10.3141ZM12.3003 14.9829C12.5028 14.9829 12.6795 15.0241 12.8304 15.1064C12.9848 15.1888 13.1032 15.2968 13.1856 15.4306V15.0241H14.0656V17.8907C14.0656 18.1549 14.0125 18.3934 13.9061 18.6061C13.8032 18.8223 13.6436 18.9938 13.4275 19.1208C13.2147 19.2477 12.9488 19.3112 12.6297 19.3112C12.2043 19.3112 11.8594 19.21 11.5953 19.0075C11.3311 18.8085 11.1801 18.5375 11.1423 18.1944H12.0121C12.0396 18.3042 12.1048 18.3899 12.2077 18.4517C12.3106 18.5169 12.4376 18.5495 12.5886 18.5495C12.7704 18.5495 12.9145 18.4963 13.0209 18.3899C13.1307 18.287 13.1856 18.1206 13.1856 17.8907V17.4841C13.0998 17.618 12.9814 17.7278 12.8304 17.8135C12.6795 17.8959 12.5028 17.937 12.3003 17.937C12.0636 17.937 11.8492 17.877 11.657 17.7569C11.4649 17.6334 11.3122 17.4601 11.199 17.2371C11.0892 17.0107 11.0343 16.7499 11.0343 16.4548C11.0343 16.1597 11.0892 15.9007 11.199 15.6777C11.3122 15.4547 11.4649 15.2831 11.657 15.163C11.8492 15.0429 12.0636 14.9829 12.3003 14.9829ZM13.1856 16.46C13.1856 16.2404 13.1238 16.0671 13.0003 15.9402C12.8802 15.8132 12.7327 15.7497 12.5577 15.7497C12.3827 15.7497 12.2334 15.8132 12.1099 15.9402C11.9898 16.0637 11.9298 16.2352 11.9298 16.4548C11.9298 16.6744 11.9898 16.8494 12.1099 16.9798C12.2334 17.1067 12.3827 17.1702 12.5577 17.1702C12.7327 17.1702 12.8802 17.1067 13.0003 16.9798C13.1238 16.8528 13.1856 16.6796 13.1856 16.46Z"
+                                  fill="white"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {resource.name}
+                            </p>
+                            {downloadProgress[idx] === undefined && (
+                              <p className="text-xs text-gray-500">
+                                {resource.size} MB
+                              </p>
+                            )}
+                            {downloadProgress[idx] !== undefined && (
+                              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-orange-500 h-full rounded-full transition-all duration-300 ease-out"
+                                  style={{ width: `${downloadProgress[idx]}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownload(idx)}
+                          className="text-xs font-semibold text-orange-500 hover:text-orange-600 ml-2 shrink-0"
                         >
-                          <BookOpen
-                            size={18}
-                            className={
-                              resource.color === 'red'
-                                ? 'text-red-500'
-                                : resource.color === 'green'
-                                  ? 'text-green-500'
-                                  : 'text-blue-500'
-                            }
-                          />
-                        </div>
-                        <div className="truncate">
-                          <p className="text-sm font-medium text-gray-800 truncate">
-                            {resource.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {resource.size}
-                          </p>
-                        </div>
+                          {downloadProgress[idx] !== undefined
+                            ? `${downloadProgress[idx]}%`
+                            : "Download"}
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleDownload(idx)}
-                        className="text-xs font-semibold text-orange-500 hover:text-orange-600 ml-2"
-                      >
-                        {downloadProgress[idx] !== undefined
-                          ? `${downloadProgress[idx]}%`
-                          : 'Download'}
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -271,7 +323,7 @@ export default function Home() {
                         <div className="flex group gap-1 items-end w-full px-1">
                           {/* tooltip */}
                           <div>
-                            <div className="absolute -top-6 w-16 p-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                            <div className="absolute top-6 w-16 p-1 bg-gray-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity text-center">
                               Study: {data.study} hrs
                               <br />
                               Online Test: {data.onlineTest} hrs
@@ -352,7 +404,7 @@ export default function Home() {
                     <div key={idx} className="flex items-start gap-3">
                       <div
                         className={`mt-1 shrink-0 ${
-                          item.completed ? 'text-orange-500' : 'text-gray-300'
+                          item.completed ? "text-orange-500" : "text-gray-300"
                         }`}
                       >
                         {item.completed ? (
@@ -365,8 +417,8 @@ export default function Home() {
                         <p
                           className={`text-sm font-medium truncate ${
                             item.completed
-                              ? 'text-gray-400 line-through'
-                              : 'text-gray-800'
+                              ? "text-gray-400 line-through"
+                              : "text-gray-800"
                           }`}
                         >
                           {item.task}
@@ -394,19 +446,19 @@ export default function Home() {
                       key={idx}
                       className={`p-4 rounded-lg border ${
                         cls.active
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200'
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-gray-200"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            cls.active ? 'bg-white' : 'bg-gray-100'
+                            cls.active ? "bg-white" : "bg-gray-100"
                           }`}
                         >
                           <BookOpen
                             className={
-                              cls.active ? 'text-orange-500' : 'text-gray-400'
+                              cls.active ? "text-orange-500" : "text-gray-400"
                             }
                             size={20}
                           />
@@ -414,7 +466,7 @@ export default function Home() {
                         <div className="flex-1 min-w-0">
                           <h4
                             className={`text-sm font-semibold truncate ${
-                              cls.active ? 'text-orange-500' : 'text-gray-800'
+                              cls.active ? "text-orange-500" : "text-gray-800"
                             }`}
                           >
                             {cls.name}

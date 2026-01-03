@@ -1,12 +1,12 @@
 import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
 import {
-    ChevronLeft,
-    ChevronRight,
-    FilterIcon,
-    Menu,
-    Plus,
-    X
+  ChevronLeft,
+  ChevronRight,
+  FilterIcon,
+  Menu,
+  Plus,
+  X,
 } from "lucide-react";
 import Head from "next/head";
 import { useMemo, useState } from "react";
@@ -145,7 +145,7 @@ const SchedulePage = () => {
   const changeStep = (direction: number) => {
     if (currentView === "month") {
       setFocusDate(
-        new Date(focusDate.getFullYear(), focusDate.getMonth() + direction, 1)
+        new Date(focusDate.getFullYear(), focusDate.getMonth() + direction, 1),
       );
       return;
     }
@@ -167,11 +167,11 @@ const SchedulePage = () => {
       const end = weekDays[6];
       const startLabel = `${monthNames[start.getMonth()].slice(
         0,
-        3
+        3,
       )} ${start.getDate()}`;
       const endLabel = `${monthNames[end.getMonth()].slice(
         0,
-        3
+        3,
       )} ${end.getDate()}`;
       return `${startLabel} - ${endLabel}`;
     }
@@ -299,7 +299,7 @@ const SchedulePage = () => {
               const matchingEvents = dayEvents.filter((event) =>
                 event.time
                   ? event.time.startsWith(String(hour).padStart(2, "0"))
-                  : false
+                  : false,
               );
 
               return (
@@ -421,8 +421,8 @@ const SchedulePage = () => {
                         {mode === "month"
                           ? "Monthly"
                           : mode === "week"
-                          ? "Weekly"
-                          : "Daily"}
+                            ? "Weekly"
+                            : "Daily"}
                       </button>
                     ))}
                   </div>
@@ -433,8 +433,8 @@ const SchedulePage = () => {
                     <FilterIcon size={16} />
                     Filter
                   </button>
-                   {/* seperator */}
-                    <div className="w-px h-8 bg-gray-300" />
+                  {/* seperator */}
+                  <div className="w-px h-8 bg-gray-300" />
                   <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold">
                     <Plus size={16} />
                     Add Event

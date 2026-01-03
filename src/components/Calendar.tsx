@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {};
 
@@ -7,21 +7,21 @@ const Calendar = (props: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // June 2024
 
   const monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
-  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -46,13 +46,13 @@ const Calendar = (props: Props) => {
 
   const goToPreviousMonth = () => {
     setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
     );
   };
 
   const goToNextMonth = () => {
     setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
     );
   };
 
@@ -64,11 +64,6 @@ const Calendar = (props: Props) => {
       currentDate.getMonth() === today.getMonth() &&
       currentDate.getFullYear() === today.getFullYear()
     );
-  };
-
-  const isSelected = (day: number | null) => {
-    // Highlight specific dates (4th and 8th for demo)
-    return day === 4 || day === 8;
   };
 
   const dates = getDaysInMonth(currentDate);
@@ -106,17 +101,17 @@ const Calendar = (props: Props) => {
             key={idx}
             className={`text-center text-sm py-1 cursor-pointer transition-colors ${
               date === null
-                ? 'text-transparent pointer-events-none'
+                ? "text-transparent pointer-events-none"
                 : date === 4
-                  ? 'bg-orange-500 text-white rounded-full font-semibold'
+                  ? "bg-orange-500 text-white rounded-full font-semibold"
                   : date === 8
-                    ? 'bg-orange-100 text-orange-500 rounded-full font-semibold'
+                    ? "bg-orange-100 text-orange-500 rounded-full font-semibold"
                     : isToday(date)
-                      ? 'bg-blue-100 text-blue-600 rounded-full font-semibold'
-                      : 'text-gray-700 hover:bg-gray-100 rounded-full'
+                      ? "bg-blue-100 text-blue-600 rounded-full font-semibold"
+                      : "text-gray-700 hover:bg-gray-100 rounded-full"
             }`}
           >
-            {date || ''}
+            {date || ""}
           </div>
         ))}
       </div>
