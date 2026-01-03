@@ -24,7 +24,7 @@ type MenuItem = {
 type Props = {};
 
 const Sidebar = (props: Props) => {
-  const [activeItem, setActiveItem] = useState('Dashboard');
+  const [activeItem, setActiveItem] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems: MenuItem[] = [
@@ -112,8 +112,8 @@ const Sidebar = (props: Props) => {
               }}
               className={`
                 w-full flex items-center ${
-                  isCollapsed ? 'justify-center' : 'gap-4'
-                } px-5 py-3 rounded-lg text-left transition-all
+                  isCollapsed ? 'justify-center p-3' : 'gap-4 px-5 py-3'
+                }  rounded-lg text-left transition-all
                 ${
                   isActive
                     ? 'bg-orange-500 text-white shadow-md'
