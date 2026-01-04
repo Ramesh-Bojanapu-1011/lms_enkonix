@@ -1,736 +1,726 @@
 import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
-import { ChevronLeft, ChevronRight, Menu, Plus, Search } from "lucide-react";
-import Head from "next/head";
+import { Menu, Search, X } from "lucide-react";
 import React from "react";
 
-type AssignmentStatus = "Done" | "Progress" | "Pending";
+import Head from "next/head";
+
+type AssignmentStatus = "Pending" | "Progress" | "Done";
 
 type Assignment = {
+  id: number;
   title: string;
   course: string;
   dueDate: string;
   status: AssignmentStatus;
-  submit: "Submitted" | "Upload";
+  students: string[];
+  submission?: { url: string; submittedAt: Date; fileName: string };
 };
 
+type Role = "Student" | "Faculty" | "Admin";
+
 const statusStyles: Record<AssignmentStatus, string> = {
-  Done: "bg-green-100 text-green-700",
-  Progress: "bg-blue-100 text-blue-600",
-  Pending: "bg-red-100 text-red-600",
+  Pending: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-200",
+  Progress: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200",
+  Done: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-200",
 };
 
 const statusDot: Record<AssignmentStatus, string> = {
-  Done: "bg-green-500",
-  Progress: "bg-blue-500",
   Pending: "bg-red-500",
+  Progress: "bg-blue-500",
+  Done: "bg-green-500",
 };
 
 const Assignments = () => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [role, setRole] = React.useState<Role>("Student");
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<
-    AssignmentStatus | "All"
-  >("All");
-  const [monthFilter, setMonthFilter] = React.useState<string>("All");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(10);
-  const [showAddModal, setShowAddModal] = React.useState(false);
-  const [openSubmitDropdown, setOpenSubmitDropdown] = React.useState<
-    number | null
-  >(null);
-  const [openStatusDropdown, setOpenStatusDropdown] = React.useState<
-    number | null
-  >(null);
-  const [newAssignment, setNewAssignment] = React.useState<Assignment>({
+  const [assignments, setAssignments] = React.useState<Assignment[]>([]);
+  const [newAssignment, setNewAssignment] = React.useState({
     title: "",
     course: "",
     dueDate: "",
-    status: "Pending",
-    submit: "Upload",
+    students: "",
   });
+  const [studentInputs, setStudentInputs] = React.useState<
+    Record<number, string>
+  >({});
+  const [submitModal, setSubmitModal] = React.useState<{
+    assignmentId: number;
+    file: File | null;
+  } | null>(null);
+  const [reviewModal, setReviewModal] = React.useState<{
+    assignmentId: number;
+  } | null>(null);
+  const [uploadingFileId, setUploadingFileId] = React.useState<number | null>(
+    null,
+  );
 
-  const [assignments, setAssignments] = React.useState<Assignment[]>([
-    {
-      title: "Conducting User Research and Personas",
-      course: "User Research and Personas",
-      dueDate: "July 1, 2024",
-      status: "Done",
-      submit: "Submitted",
-    },
-    {
-      title: "Competitive Analysis Report",
-      course: "Competitive Analysis in UX",
-      dueDate: "July 25, 2024",
-      status: "Progress",
-      submit: "Upload",
-    },
-    {
-      title: "Creating Wireframes",
-      course: "Wireframing and Prototyping",
-      dueDate: "August 1, 2024",
-      status: "Progress",
-      submit: "Upload",
-    },
-    {
-      title: "Usability Testing and Findings",
-      course: "Usability Testing and Iteration",
-      dueDate: "August 22, 2024",
-      status: "Pending",
-      submit: "Upload",
-    },
-    {
-      title: "Developing Visual Design Language",
-      course: "Visual Design and Branding",
-      dueDate: "August 29, 2024",
-      status: "Pending",
-      submit: "Upload",
-    },
-    {
-      title: "Creating a Design System",
-      course: "Design Systems and Components",
-      dueDate: "September 5, 2024",
-      status: "Pending",
-      submit: "Upload",
-    },
-  ]);
-
-  const monthOptions = React.useMemo(() => {
-    const months = assignments.map((a) =>
-      new Date(a.dueDate).toLocaleString("default", { month: "long" }),
-    );
-    return ["All", ...Array.from(new Set(months))];
+  // Load assignments from database on mount
+  React.useEffect(() => {
+    const loadAssignments = async () => {
+      try {
+        const response = await fetch("/api/assignments");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data) {
+            setAssignments(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load assignments:", error);
+      }
+    };
+    loadAssignments();
   }, []);
 
-  const filteredAssignments = assignments.filter(
-    ({ title, course, status, submit, dueDate }) => {
-      const query = searchTerm.trim().toLowerCase();
-      const matchesSearch =
-        !query ||
-        title.toLowerCase().includes(query) ||
-        course.toLowerCase().includes(query) ||
-        status.toLowerCase().includes(query) ||
-        submit.toLowerCase().includes(query);
+  const setStatus = (id: number, status: AssignmentStatus) => {
+    setAssignments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status } : a)),
+    );
+    // Update in database
+    fetch("/api/assignments", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    }).catch((error) => console.error("Failed to update status:", error));
+  };
 
-      const matchesStatus = statusFilter === "All" || status === statusFilter;
+  const filteredAssignments = assignments.filter((a) => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      a.title.toLowerCase().includes(q) ||
+      a.course.toLowerCase().includes(q) ||
+      a.status.toLowerCase().includes(q) ||
+      a.students.some((s) => s.toLowerCase().includes(q))
+    );
+  });
 
-      const dueMonth = new Date(dueDate).toLocaleString("default", {
-        month: "long",
+  const roleActions: Record<Role, string[]> = {
+    Student: ["Submit work"],
+    Faculty: ["Review", "Grade"],
+    Admin: ["Edit", "Archive"],
+  };
+
+  const renderActions = (item: Assignment) => {
+    const actions = roleActions[role];
+    const studentInput = studentInputs[item.id] || "";
+
+    const addStudent = () => {
+      const name = studentInput.trim();
+      if (!name) return;
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.id === item.id && !a.students.includes(name)
+            ? { ...a, students: [...a.students, name] }
+            : a,
+        ),
+      );
+      // Update in database
+      fetch("/api/assignments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: item.id,
+          students: [...item.students, name],
+        }),
+      }).catch((error) => console.error("Failed to add student:", error));
+      setStudentInputs((prev) => ({ ...prev, [item.id]: "" }));
+    };
+
+    return (
+      <div className="flex flex-col gap-2  ">
+        <div className="flex flex-wrap gap-2  ">
+          {actions.map((action) => (
+            <button
+              key={action}
+              onClick={() => {
+                if (action === "Submit work") {
+                  setSubmitModal({ assignmentId: item.id, file: null });
+                } else if (action === "Review") {
+                  setReviewModal({ assignmentId: item.id });
+                }
+              }}
+              className="px-3 py-1 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              {action}
+            </button>
+          ))}
+          {role !== "Admin" && (
+            <select
+              value={item.status}
+              onChange={(e) =>
+                setStatus(item.id, e.target.value as AssignmentStatus)
+              }
+              className="px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="Pending">Pending</option>
+              <option value="Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          )}
+        </div>
+
+        {role === "Faculty" && (
+          <div className="flex w-full gap-2">
+            <input
+              value={studentInput}
+              onChange={(e) =>
+                setStudentInputs((prev) => ({
+                  ...prev,
+                  [item.id]: e.target.value,
+                }))
+              }
+              placeholder="Add student"
+              className="flex-1 px-2 py-1 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <button
+              onClick={addStudent}
+              className="px-3 py-1 text-xs font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+            >
+              Add
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const createAssignment = () => {
+    const title = newAssignment.title.trim();
+    const course = newAssignment.course.trim();
+    const due = newAssignment.dueDate.trim();
+    if (!title || !course || !due) return;
+    const students = newAssignment.students
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    // Save to database
+    fetch(`/api/assignments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        course,
+        dueDate: due,
+        students,
+      }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error("Failed to create assignment");
+      })
+      .then((data) => {
+        setAssignments((prev) => [...prev, data.data]);
+        console.log("Assignment created successfully");
+      })
+      .catch((error) => {
+        console.error("Failed to create assignment:", error);
       });
-      const matchesMonth = monthFilter === "All" || dueMonth === monthFilter;
 
-      return matchesSearch && matchesStatus && matchesMonth;
-    },
-  );
-
-  const totalPages = Math.ceil(filteredAssignments.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedAssignments = filteredAssignments.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
-
-  const handleAssignmentChange = (field: keyof Assignment, value: string) => {
-    setNewAssignment((prev) => ({ ...prev, [field]: value }));
+    setNewAssignment({ title: "", course: "", dueDate: "", students: "" });
   };
 
-  const handleAddAssignment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAssignment.title.trim() || !newAssignment.course.trim()) return;
-    setAssignments((prev) => [...prev, newAssignment]);
-    setShowAddModal(false);
-    setNewAssignment({
-      title: "",
-      course: "",
-      dueDate: "",
-      status: "Pending",
-      submit: "Upload",
-    });
-  };
+  const handleFileUpload = () => {
+    if (!submitModal?.file) return;
 
-  const handleSubmitChange = (
-    index: number,
-    newSubmit: "Submitted" | "Upload",
-  ) => {
-    const actualIndex = startIndex + index;
-    setAssignments((prev) =>
-      prev.map((item, idx) =>
-        idx === actualIndex ? { ...item, submit: newSubmit } : item,
-      ),
-    );
-    setOpenSubmitDropdown(null);
-  };
+    setUploadingFileId(submitModal.assignmentId);
 
-  const handleStatusChange = (index: number, newStatus: AssignmentStatus) => {
-    const actualIndex = startIndex + index;
-    setAssignments((prev) =>
-      prev.map((item, idx) =>
-        idx === actualIndex ? { ...item, status: newStatus } : item,
-      ),
-    );
-    setOpenStatusDropdown(null);
-  };
+    const reader = new FileReader();
+    reader.onerror = () => {
+      console.error("FileReader error:", reader.error);
+      setUploadingFileId(null);
+      alert("Failed to read file");
+    };
+    reader.onload = async (e) => {
+      try {
+        const file = submitModal.file;
+        if (!file || !e.target?.result) {
+          throw new Error("No file selected or file read error");
+        }
+        const formData = new FormData();
+        formData.append("file", file);
 
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, monthFilter]);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Upload failed");
+        }
+
+        setAssignments((prev) =>
+          prev.map((a) =>
+            a.id === submitModal.assignmentId
+              ? {
+                  ...a,
+                  submission: {
+                    url: data.fileUrl,
+                    fileName: submitModal.file?.name || "submission",
+                    submittedAt: new Date(),
+                  },
+                }
+              : a,
+          ),
+        );
+        // Update in database
+        fetch("/api/assignments", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: submitModal.assignmentId,
+            submission: {
+              url: data.fileUrl,
+              fileName: submitModal.file?.name || "submission",
+              submittedAt: new Date(),
+            },
+          }),
+        }).catch((error) => console.error("Failed to save submission:", error));
+        setStatus(submitModal.assignmentId, "Progress");
+        setSubmitModal(null);
+        setUploadingFileId(null);
+      } catch (error) {
+        console.error("Upload error:", error);
+        setUploadingFileId(null);
+        const message =
+          error instanceof Error ? error.message : "Upload failed";
+        alert(`Failed to upload file: ${message}`);
+      }
+    };
+    reader.readAsDataURL(submitModal.file);
+  };
 
   return (
     <>
       <Head>
-        <title>Assignments - LMS</title>
+        <title>Assignments | LMS</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
+        {/* Sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 bg-white dark:bg-gray-900 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <Sidebar />
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden absolute top-4 right-4 p-2 text-gray-500 dark:text-gray-400"
+          >
+            <X size={24} />
+          </button>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2">
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Mobile header */}
+          <div className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b dark:border-gray-800">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 text-gray-600 dark:text-gray-300"
+            >
               <Menu size={24} />
             </button>
-            <span className="font-bold">Assignments</span>
+            <span className="font-bold text-orange-500">Assignments</span>
             <div className="w-8" />
           </div>
 
           <TabBar />
 
-          <div className="flex-1 overflow-y-auto p-4  ">
-            <div className="bg-white       p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className=" flex w-full  gap-2.5 items-center">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      Assignments
-                    </h1>
-                    <button
-                      type="button"
-                      aria-label="Add assignment"
-                      onClick={() => setShowAddModal(true)}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-700 hover:text-orange-500 transition-colors"
-                    >
-                      <Plus size={20} />
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    View and manage your course assignments
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="hidden sm:flex items-center gap-3 text-sm text-gray-600">
-                    <span className="font-medium text-gray-700">Filter by</span>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={monthFilter}
-                        onChange={(e) => setMonthFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        {monthOptions.map((month) => (
-                          <option key={month} value={month}>
-                            {month === "All" ? "All dates" : month}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) =>
-                          setStatusFilter(
-                            e.target.value as AssignmentStatus | "All",
-                          )
-                        }
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="All">All status</option>
-                        <option value="Done">Done</option>
-                        <option value="Progress">In Progress</option>
-                        <option value="Pending">Pending</option>
-                      </select>
-                    </div>
-                    <div className="relative w-64">
-                      <Search
-                        size={16}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search assignments"
-                        className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-gray-200 bg-white text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="sm:hidden flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-                      <Search size={18} className="text-gray-400" />
-                      <input
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search assignments"
-                        className="bg-transparent outline-none text-sm w-full"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        value={monthFilter}
-                        onChange={(e) => setMonthFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        {monthOptions.map((month) => (
-                          <option key={month} value={month}>
-                            {month === "All" ? "All dates" : month}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={statusFilter}
-                        onChange={(e) =>
-                          setStatusFilter(
-                            e.target.value as AssignmentStatus | "All",
-                          )
-                        }
-                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="All">All status</option>
-                        <option value="Done">Done</option>
-                        <option value="Progress">In Progress</option>
-                        <option value="Pending">Pending</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="space-y-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Assignments
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Switch between student, faculty, and admin views to see
+                  available actions.
+                </p>
               </div>
-
-              {/* Table - Desktop */}
-              <div className="mt-6 border border-gray-200 rounded-xl overflow-hidden hidden md:block">
-                <div className="bg-gray-50 grid grid-cols-12 text-xs font-semibold text-gray-600 px-4 py-3">
-                  <div className="col-span-4">Assignment Title</div>
-                  <div className="col-span-3">Course/lessons</div>
-                  <div className="col-span-2">Due Date</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-1 text-center">Submit</div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div className="relative w-full sm:w-64">
+                  <Search
+                    size={16}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search assignments"
+                    className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
                 </div>
-
-                <div className="divide-y divide-gray-100">
-                  {paginatedAssignments.map((item, idx) => (
-                    <div
-                      key={item.title + idx}
-                      className="grid grid-cols-12 items-center px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
+                <div className="inline-flex rounded-lg border w-fit border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+                  {["Student", "Faculty", "Admin"].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setRole(r as Role)}
+                      className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                        role === r
+                          ? "bg-orange-500 text-white"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
                     >
-                      <div className="col-span-4 font-semibold text-gray-800 truncate pr-4">
-                        {item.title}
-                      </div>
-                      <div className="col-span-3 text-gray-600 truncate pr-4">
-                        {item.course}
-                      </div>
-                      <div className="col-span-2 text-gray-600">
-                        {item.dueDate}
-                      </div>
-                      <div className="col-span-2 relative">
-                        <button
-                          onClick={() =>
-                            setOpenStatusDropdown(
-                              openStatusDropdown === idx ? null : idx,
-                            )
-                          }
-                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity ${
-                            statusStyles[item.status]
-                          }`}
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              statusDot[item.status]
-                            }`}
-                          ></span>
-                          {item.status}
-                        </button>
-                        {openStatusDropdown === idx && (
-                          <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-35">
-                            <button
-                              onClick={() => handleStatusChange(idx, "Pending")}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 first:rounded-t-lg flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                              Pending
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleStatusChange(idx, "Progress")
-                              }
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                              Progress
-                            </button>
-                            <button
-                              onClick={() => handleStatusChange(idx, "Done")}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 last:rounded-b-lg flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                              Done
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-1 text-center relative">
-                        <button
-                          onClick={() =>
-                            setOpenSubmitDropdown(
-                              openSubmitDropdown === idx ? null : idx,
-                            )
-                          }
-                          className={`text-sm font-semibold px-2 py-1 rounded hover:bg-gray-100 transition-colors ${
-                            item.submit === "Submitted"
-                              ? "text-[#B6B6B6]"
-                              : "text-[#727272]"
-                          }`}
-                        >
-                          {item.submit}
-                        </button>
-                        {openSubmitDropdown === idx && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-35">
-                            <button
-                              onClick={() => handleSubmitChange(idx, "Upload")}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 first:rounded-t-lg"
-                            >
-                              Upload
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleSubmitChange(idx, "Submitted")
-                              }
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 last:rounded-b-lg"
-                            >
-                              Submitted
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      {r}
+                    </button>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Cards - Mobile */}
-              <div className="mt-6 md:hidden space-y-4">
-                {paginatedAssignments.map((item, idx) => (
-                  <div
-                    key={item.title + idx}
-                    className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-md transition-shadow"
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Total
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {filteredAssignments.length}
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  In Progress
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {
+                    filteredAssignments.filter((a) => a.status === "Progress")
+                      .length
+                  }
+                </p>
+              </div>
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Pending
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {
+                    filteredAssignments.filter((a) => a.status === "Pending")
+                      .length
+                  }
+                </p>
+              </div>
+            </div>
+
+            {role === "Faculty" && (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  Create assignment
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input
+                    value={newAssignment.title}
+                    onChange={(e) =>
+                      setNewAssignment((prev) => ({
+                        ...prev,
+                        title: e.target.value,
+                      }))
+                    }
+                    placeholder="Title"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    value={newAssignment.course}
+                    onChange={(e) =>
+                      setNewAssignment((prev) => ({
+                        ...prev,
+                        course: e.target.value,
+                      }))
+                    }
+                    placeholder="Course"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    type="date"
+                    value={newAssignment.dueDate}
+                    onChange={(e) =>
+                      setNewAssignment((prev) => ({
+                        ...prev,
+                        dueDate: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <input
+                    value={newAssignment.students}
+                    onChange={(e) =>
+                      setNewAssignment((prev) => ({
+                        ...prev,
+                        students: e.target.value,
+                      }))
+                    }
+                    placeholder="Students (comma separated)"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={createAssignment}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-gray-800 text-sm flex-1 pr-2">
-                        {item.title}
-                      </h3>
-                      <div className="relative">
-                        <button
-                          onClick={() =>
-                            setOpenStatusDropdown(
-                              openStatusDropdown === idx ? null : idx,
-                            )
-                          }
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold shrink-0 cursor-pointer hover:opacity-80 transition-opacity ${
-                            statusStyles[item.status]
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              statusDot[item.status]
-                            }`}
-                          ></span>
-                          {item.status}
-                        </button>
-                        {openStatusDropdown === idx && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32.5">
-                            <button
-                              onClick={() => handleStatusChange(idx, "Pending")}
-                              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700 first:rounded-t-lg flex items-center gap-2"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                              Pending
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleStatusChange(idx, "Progress")
-                              }
-                              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700 flex items-center gap-2"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                              Progress
-                            </button>
-                            <button
-                              onClick={() => handleStatusChange(idx, "Done")}
-                              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 text-gray-700 last:rounded-b-lg flex items-center gap-2"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                              Done
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    Create assignment
+                  </button>
+                </div>
+              </div>
+            )}
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-xs">Course:</span>
-                        <span className="text-gray-700 font-medium text-xs">
-                          {item.course}
-                        </span>
+            <div className="hidden md:block border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
+              <div
+                className={`grid ${
+                  role != "Student" ? "grid-cols-6" : "grid-cols-5"
+                } text-xs font-semibold text-gray-600 dark:text-gray-300 px-4 py-3 bg-gray-50 dark:bg-gray-800`}
+              >
+                <div className=" ">Assignment</div>
+                <div className=" ">Course</div>
+                <div className="">Due</div>
+                {(role == "Faculty" || role == "Admin") && (
+                  <div className="">Students</div>
+                )}
+                <div className="">Status</div>
+                <div className="  ">Actions</div>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredAssignments.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`grid ${
+                      role != "Student" ? "grid-cols-6" : "grid-cols-5"
+                    } items-center px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800`}
+                  >
+                    <div className="  font-semibold text-gray-800 dark:text-gray-100 truncate">
+                      {item.title}
+                    </div>
+                    <div className="  text-gray-600 dark:text-gray-300 truncate">
+                      {item.course}
+                    </div>
+                    <div className="  text-gray-600 dark:text-gray-300">
+                      {item.dueDate}
+                    </div>
+                    {(role == "Faculty" || role == "Admin") && (
+                      <div className="  text-gray-600 dark:text-gray-300 truncate">
+                        {item.students.length ? item.students.join(", ") : "—"}
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-xs">Due Date:</span>
-                        <span className="text-gray-700 text-xs">
-                          {item.dueDate}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-100 relative">
-                        <span className="text-gray-500 text-xs">Submit:</span>
-                        <div className="relative">
-                          <button
-                            onClick={() =>
-                              setOpenSubmitDropdown(
-                                openSubmitDropdown === idx ? null : idx,
-                              )
-                            }
-                            className={`text-xs font-semibold px-2 py-1 rounded hover:bg-gray-100 ${
-                              item.submit === "Submitted"
-                                ? "text-[#B6B6B6]"
-                                : "text-orange-500"
-                            }`}
-                          >
-                            {item.submit}
-                          </button>
-                          {openSubmitDropdown === idx && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-35">
-                              <button
-                                onClick={() =>
-                                  handleSubmitChange(idx, "Upload")
-                                }
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 first:rounded-t-lg"
-                              >
-                                Upload
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleSubmitChange(idx, "Submitted")
-                                }
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 last:rounded-b-lg"
-                              >
-                                Submitted
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    )}
+                    <div className="  flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                          statusStyles[item.status]
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            statusDot[item.status]
+                          }`}
+                        ></span>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div className=" flex justify-center ">
+                      {renderActions(item)}
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Pagination */}
-              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm text-gray-600">
-                <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <span className="text-xs md:text-sm">Show</span>
-                  <select
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="border border-gray-200 rounded-md px-2 py-1 text-xs md:text-sm bg-white"
-                  >
-                    <option>10</option>
-                    <option>20</option>
-                    <option>30</option>
-                  </select>
-                  <span className="text-xs md:text-sm">Row</span>
-                </div>
-
-                <div className="flex items-center gap-1 md:gap-2 justify-center flex-wrap">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-1.5 md:p-2 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  {Array.from(
-                    { length: Math.min(3, totalPages) },
-                    (_, i) => i + 1,
-                  ).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 md:w-9 md:h-9 rounded border text-xs md:text-sm font-semibold transition-colors ${
-                        page === currentPage
-                          ? "bg-orange-500 border-orange-500 text-white"
-                          : "border-gray-200 text-gray-700 hover:bg-gray-50"
+            <div className="space-y-4 md:hidden">
+              {filteredAssignments.map((item) => (
+                <div
+                  key={item.id}
+                  className="border border-gray-200 dark:border-gray-800 rounded-xl p-4 bg-white dark:bg-gray-900 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-100">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.course}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${
+                        statusStyles[item.status]
                       }`}
                     >
-                      {page}
-                    </button>
-                  ))}
-                  {totalPages > 3 && (
-                    <>
-                      <span className="px-1 md:px-2 text-gray-400 text-xs md:text-sm">
-                        ...
-                      </span>
-                      {totalPages > 4 && (
-                        <button
-                          onClick={() => setCurrentPage(totalPages)}
-                          className={`w-8 h-8 md:w-9 md:h-9 rounded border text-xs md:text-sm font-semibold transition-colors ${
-                            totalPages === currentPage
-                              ? "bg-orange-500 border-orange-500 text-white"
-                              : "border-gray-200 text-gray-700 hover:bg-gray-50"
-                          }`}
-                        >
-                          {totalPages}
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="p-1.5 md:p-2 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Add Assignment Modal */}
-              {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                  <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-gray-200">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                      <h4 className="text-lg font-semibold text-gray-800">
-                        Add New Assignment
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddModal(false)}
-                        className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
-                        aria-label="Close modal"
-                      >
-                        <Search size={16} className="rotate-45" />
-                      </button>
-                    </div>
-                    <form
-                      onSubmit={handleAddAssignment}
-                      className="p-4 space-y-4"
-                    >
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Assignment Title *
-                        </label>
-                        <input
-                          value={newAssignment.title}
-                          onChange={(e) =>
-                            handleAssignmentChange("title", e.target.value)
-                          }
-                          className="w-full rounded-lg border border-gray-200 bg-white text-sm text-gray-800 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          placeholder="Enter assignment title"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Course/Lesson *
-                        </label>
-                        <input
-                          value={newAssignment.course}
-                          onChange={(e) =>
-                            handleAssignmentChange("course", e.target.value)
-                          }
-                          className="w-full rounded-lg border border-gray-200 bg-white text-sm text-gray-800 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          placeholder="Enter course name"
-                          required
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700">
-                            Due Date
-                          </label>
-                          <input
-                            type="date"
-                            value={newAssignment.dueDate}
-                            onChange={(e) =>
-                              handleAssignmentChange("dueDate", e.target.value)
-                            }
-                            className="w-full rounded-lg border border-gray-200 bg-white text-sm text-gray-800 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-gray-700">
-                            Status
-                          </label>
-                          <select
-                            value={newAssignment.status}
-                            onChange={(e) =>
-                              handleAssignmentChange(
-                                "status",
-                                e.target.value as AssignmentStatus,
-                              )
-                            }
-                            className="w-full rounded-lg border border-gray-200 bg-white text-sm text-gray-800 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Progress">In Progress</option>
-                            <option value="Done">Done</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">
-                          Submission Status
-                        </label>
-                        <select
-                          value={newAssignment.submit}
-                          onChange={(e) =>
-                            handleAssignmentChange(
-                              "submit",
-                              e.target.value as "Submitted" | "Upload",
-                            )
-                          }
-                          className="w-full rounded-lg border border-gray-200 bg-white text-sm text-gray-800 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        >
-                          <option value="Upload">Upload</option>
-                          <option value="Submitted">Submitted</option>
-                        </select>
-                      </div>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowAddModal(false)}
-                          className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"
-                        >
-                          Add Assignment
-                        </button>
-                      </div>
-                    </form>
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          statusDot[item.status]
+                        }`}
+                      ></span>
+                      {item.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    <span>Due: {item.dueDate}</span>
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    Students:{" "}
+                    {item.students.length ? item.students.join(", ") : "—"}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {renderActions(item)}
                   </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Submit Modal */}
+      {submitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 w-96 max-h-96 flex flex-col">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Submit Work
+            </h2>
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                <input
+                  type="file"
+                  id="file-input"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setSubmitModal((prev) =>
+                        prev ? { ...prev, file: e.target.files![0] } : null,
+                      );
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="file-input"
+                  className="text-center cursor-pointer"
+                >
+                  {submitModal.file ? (
+                    <>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                        {submitModal.file.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {(submitModal.file.size / 1024).toFixed(2)} KB
+                      </p>
+                      <p className="text-xs text-orange-500 mt-1">
+                        Click to change
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                        Click to upload
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        or drag and drop
+                      </p>
+                    </>
+                  )}
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                onClick={() => setSubmitModal(null)}
+                className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFileUpload}
+                disabled={
+                  !submitModal.file ||
+                  uploadingFileId === submitModal.assignmentId
+                }
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploadingFileId === submitModal.assignmentId
+                  ? "Uploading..."
+                  : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {reviewModal &&
+        (() => {
+          const assignment = assignments.find(
+            (a) => a.id === reviewModal.assignmentId,
+          );
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 w-96 flex flex-col">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Review Submission
+                </h2>
+                <div className="flex-1 flex flex-col gap-4 mb-6">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Assignment
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {assignment?.title}
+                    </p>
+                  </div>
+                  {assignment?.submission ? (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        Submitted File
+                      </p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm mb-1">
+                        {assignment.submission.fileName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        {assignment.submission.submittedAt.toLocaleString()}
+                      </p>
+                      <a
+                        href={`${assignment.submission.url}`}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                      >
+                        View Submission
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        No submission yet
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setReviewModal(null)}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </>
   );
 };

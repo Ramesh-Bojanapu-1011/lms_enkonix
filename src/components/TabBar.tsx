@@ -86,7 +86,7 @@ const TabBar = (props: Props) => {
         <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded-lg">
           <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
             <img
-              src="/api/placeholder/32/32"
+              src="https://res.cloudinary.com/dczbqwyyc/image/upload/v1767460315/c8a541adabbe9e4a0605b7cfe1900c7a70aad76a_kgemqv.png"
               alt="User Avatar"
               className="w-full h-full object-cover"
             />
