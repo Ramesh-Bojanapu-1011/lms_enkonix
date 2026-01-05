@@ -49,6 +49,18 @@ const Assignments = () => {
   const [gradeInputs, setGradeInputs] = React.useState<Record<number, string>>(
     {},
   );
+  const [editModal, setEditModal] = React.useState<null | {
+    assignmentId: number;
+    title: string;
+    course: string;
+    dueDate: string;
+    students: string;
+    status: AssignmentStatus;
+    grade: string;
+    submissionUrl: string;
+    submissionFileName: string;
+    submittedAt?: string;
+  }>(null);
   const [submitModal, setSubmitModal] = React.useState<{
     assignmentId: number;
     file: File | null;
@@ -157,6 +169,34 @@ const Assignments = () => {
                     assignmentId: item.id,
                     currentGrade: item.grade,
                   });
+                } else if (action === "Edit") {
+                  setEditModal({
+                    assignmentId: item.id,
+                    title: item.title,
+                    course: item.course,
+                    dueDate: item.dueDate,
+                    students: item.students.join(", "),
+                    status: item.status,
+                    grade: item.grade?.toString() || "",
+                    submissionUrl: item.submission?.url || "",
+                    submissionFileName: item.submission?.fileName || "",
+                    submittedAt: item.submission?.submittedAt
+                      ? new Date(item.submission.submittedAt).toISOString()
+                      : undefined,
+                  });
+                } else if (action === "Archive") {
+                  const confirmed = window.confirm(
+                    "Archive this assignment? This will remove it for all users.",
+                  );
+                  if (!confirmed) return;
+                  setAssignments((prev) => prev.filter((a) => a.id !== item.id));
+                  fetch("/api/assignments", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: item.id }),
+                  }).catch((error) =>
+                    console.error("Failed to archive assignment:", error),
+                  );
                 }
               }}
               className="px-3 py-1 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -853,6 +893,272 @@ const Assignments = () => {
                     className="px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
                   >
                     Save Grade
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Edit Modal (Admin) */}
+      {editModal &&
+        (() => {
+          const assignment = assignments.find(
+            (a) => a.id === editModal.assignmentId,
+          );
+
+          const handleEditChange = (
+            field:
+              | "title"
+              | "course"
+              | "dueDate"
+              | "students"
+              | "status"
+              | "grade"
+              | "submissionUrl"
+              | "submissionFileName"
+              | "submittedAt",
+            value: string,
+          ) => {
+            setEditModal((prev) => (prev ? { ...prev, [field]: value } : prev));
+          };
+
+          const handleEditSave = () => {
+            if (!editModal) return;
+            const gradeNumber = editModal.grade.trim()
+              ? parseFloat(editModal.grade)
+              : undefined;
+            if (
+              gradeNumber !== undefined &&
+              (isNaN(gradeNumber) || gradeNumber < 0 || gradeNumber > 10)
+            ) {
+              alert("Grade must be between 0 and 10");
+              return;
+            }
+
+            const students = editModal.students
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+
+            const submissionExists =
+              editModal.submissionUrl.trim() ||
+              editModal.submissionFileName.trim() ||
+              editModal.submittedAt;
+
+            const updatedSubmission = submissionExists
+              ? {
+                  url: editModal.submissionUrl.trim(),
+                  fileName: editModal.submissionFileName.trim() || "submission",
+                  submittedAt: editModal.submittedAt
+                    ? new Date(editModal.submittedAt)
+                    : assignment?.submission?.submittedAt || new Date(),
+                }
+              : undefined;
+
+            const updatedAssignment = {
+              ...assignment,
+              title: editModal.title,
+              course: editModal.course,
+              dueDate: editModal.dueDate,
+              status: editModal.status,
+              students,
+              grade: gradeNumber,
+              submission: updatedSubmission,
+            } as Assignment;
+
+            setAssignments((prev) =>
+              prev.map((a) =>
+                a.id === editModal.assignmentId ? updatedAssignment : a,
+              ),
+            );
+
+            fetch("/api/assignments", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: editModal.assignmentId,
+                title: updatedAssignment.title,
+                course: updatedAssignment.course,
+                dueDate: updatedAssignment.dueDate,
+                status: updatedAssignment.status,
+                students: updatedAssignment.students,
+                grade: updatedAssignment.grade,
+                submission: updatedAssignment.submission,
+              }),
+            })
+              .then((res) => {
+                if (res.ok) {
+                  setEditModal(null);
+                } else {
+                  throw new Error("Failed to save assignment changes");
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to save assignment changes:", error);
+                alert("Failed to save assignment changes. Please try again.");
+              });
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 w-130 max-h-[90vh] overflow-y-auto flex flex-col gap-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      Edit Assignment
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Admin can update all fields.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditModal(null)}
+                    className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Title
+                    </label>
+                    <input
+                      value={editModal.title}
+                      onChange={(e) =>
+                        handleEditChange("title", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Course
+                    </label>
+                    <input
+                      value={editModal.course}
+                      onChange={(e) =>
+                        handleEditChange("course", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editModal.dueDate}
+                      onChange={(e) =>
+                        handleEditChange("dueDate", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Status
+                    </label>
+                    <select
+                      value={editModal.status}
+                      onChange={(e) =>
+                        handleEditChange(
+                          "status",
+                          e.target.value as AssignmentStatus,
+                        )
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Progress">Progress</option>
+                      <option value="Done">Done</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Students (comma separated)
+                    </label>
+                    <input
+                      value={editModal.students}
+                      onChange={(e) =>
+                        handleEditChange("students", e.target.value)
+                      }
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Grade (0-10)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={editModal.grade}
+                      onChange={(e) =>
+                        handleEditChange("grade", e.target.value)
+                      }
+                      placeholder="Optional"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Submission URL
+                    </label>
+                    <input
+                      value={editModal.submissionUrl}
+                      onChange={(e) =>
+                        handleEditChange("submissionUrl", e.target.value)
+                      }
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Submission File Name
+                    </label>
+                    <input
+                      value={editModal.submissionFileName}
+                      onChange={(e) =>
+                        handleEditChange("submissionFileName", e.target.value)
+                      }
+                      placeholder="submission.pdf"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Submitted At (ISO)
+                    </label>
+                    <input
+                      value={editModal.submittedAt || ""}
+                      onChange={(e) =>
+                        handleEditChange("submittedAt", e.target.value)
+                      }
+                      placeholder="2024-05-01T12:30:00.000Z"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setEditModal(null)}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEditSave}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                  >
+                    Save Changes
                   </button>
                 </div>
               </div>
