@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ViewMode = "month" | "week" | "day";
 
@@ -18,6 +18,7 @@ type CalendarEvent = {
   title: string;
   date: string; // YYYY-MM-DD
   time?: string;
+  meatingLink?: string;
   color: "yellow" | "green" | "red" | "purple";
 };
 
@@ -45,49 +46,14 @@ const eventColorStyles: Record<CalendarEvent["color"], string> = {
   purple: "bg-purple-50 text-purple-600 border border-purple-200",
 };
 
-const events: CalendarEvent[] = [
-  { id: 1, title: "Design Review", date: "2023-09-02", color: "red" },
-  {
-    id: 2,
-    title: "Meeting",
-    date: "2023-09-05",
-    time: "11:30 - 13:00",
-    color: "yellow",
-  },
-  {
-    id: 3,
-    title: "Design Review",
-    date: "2023-09-09",
-    time: "10:00 - 11:00",
-    color: "red",
-  },
-  {
-    id: 4,
-    title: "Discussion",
-    date: "2023-09-09",
-    time: "10:00 - 11:00",
-    color: "purple",
-  },
-  {
-    id: 5,
-    title: "Market Research",
-    date: "2023-09-14",
-    color: "green",
-  },
-  { id: 6, title: "Discussion", date: "2023-09-14", color: "purple" },
-  { id: 7, title: "Design Review", date: "2023-09-19", color: "red" },
-  { id: 8, title: "New Deals", date: "2023-09-19", color: "purple" },
-  { id: 9, title: "Meeting", date: "2023-09-22", color: "yellow" },
-  { id: 10, title: "Design Review", date: "2023-09-22", color: "red" },
-  { id: 11, title: "Meeting", date: "2023-09-28", color: "yellow" },
-  { id: 12, title: "Design Review", date: "2023-09-28", color: "red" },
-  { id: 13, title: "New Deals", date: "2023-09-28", color: "purple" },
-  { id: 14, title: "Discussion", date: "2023-09-28", color: "purple" },
-  { id: 15, title: "Meeting", date: "2023-09-30", color: "yellow" },
-  { id: 16, title: "Design Review", date: "2023-09-30", color: "red" },
-  { id: 17, title: "New Deals", date: "2023-09-30", color: "purple" },
-  { id: 18, title: "Discussion", date: "2023-09-30", color: "purple" },
-];
+const eventColorEmojis: Record<CalendarEvent["color"], string> = {
+  yellow: "⭐",
+  green: "✅",
+  red: "❗",
+  purple: "🎉",
+};
+
+const initialEvents: CalendarEvent[] = [];
 
 const formatDateKey = (date: Date) => {
   const y = date.getFullYear();
@@ -130,10 +96,53 @@ const isSameDay = (a: Date, b: Date) =>
 
 const SchedulePage = () => {
   const [currentView, setCurrentView] = useState<ViewMode>("month");
-  const [focusDate, setFocusDate] = useState<Date>(new Date(2023, 8, 1));
+  const [focusDate, setFocusDate] = useState<Date>(new Date());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showEventDetailModal, setShowEventDetailModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null,
+  );
+  const [selectedColors, setSelectedColors] = useState<
+    CalendarEvent["color"][]
+  >([]);
+  const [eventForm, setEventForm] = useState({
+    title: "",
+    date: "",
+    time: "",
+    meatingLink: "",
+    color: "yellow" as CalendarEvent["color"],
+  });
 
-  const eventsByDate = useMemo(() => groupEventsByDate(events), []);
+  useEffect(() => {
+    // Fetch events from database on mount
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch("/api/events");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched events:", data);
+          setEvents(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    if (selectedColors.length === 0) return events;
+    return events.filter((event) => selectedColors.includes(event.color));
+  }, [events, selectedColors]);
+
+  const eventsByDate = useMemo(
+    () => groupEventsByDate(filteredEvents),
+    [filteredEvents],
+  );
   const monthGrid = useMemo(() => buildMonthGrid(focusDate), [focusDate]);
   const today = useMemo(() => new Date(), []);
 
@@ -157,6 +166,129 @@ const SchedulePage = () => {
   };
 
   const handleToday = () => setFocusDate(new Date());
+
+  const handleAddEvent = () => {
+    setShowEventModal(true);
+  };
+
+  const handleOpenFilter = () => {
+    setShowFilterModal(true);
+  };
+
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEventDetailModal(true);
+  };
+
+  const handleCloseEventDetailModal = () => {
+    setShowEventDetailModal(false);
+    setSelectedEvent(null);
+  };
+
+  const getTimeRemaining = (event: CalendarEvent) => {
+    const now = new Date();
+    const eventDateTime = new Date(
+      event.date + (event.time ? `T${event.time}` : "T00:00:00"),
+    );
+
+    const diffMs = eventDateTime.getTime() - now.getTime();
+
+    // If event has passed
+    if (diffMs < 0) {
+      return null;
+    }
+
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0) {
+      const remainingHours = Math.floor(
+        (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      if (diffDays === 1 && remainingHours === 0) {
+        return "Tomorrow";
+      }
+      return `${diffDays} day${diffDays > 1 ? "s" : ""}${
+        remainingHours > 0 ? ` ${remainingHours}h` : ""
+      }`;
+    }
+
+    if (diffHours > 0) {
+      const remainingMinutes = Math.floor(
+        (diffMs % (1000 * 60 * 60)) / (1000 * 60),
+      );
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""}${
+        remainingMinutes > 0 ? ` ${remainingMinutes}m` : ""
+      }`;
+    }
+
+    if (diffMinutes > 0) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""}`;
+    }
+
+    return "Starting soon";
+  };
+
+  const handleCloseModal = () => {
+    setShowEventModal(false);
+    setEventForm({
+      title: "",
+      date: "",
+      time: "",
+      meatingLink: "",
+      color: "yellow",
+    });
+  };
+
+  const handleCloseFilterModal = () => {
+    setShowFilterModal(false);
+  };
+
+  const toggleColorFilter = (color: CalendarEvent["color"]) => {
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedColors([]);
+  };
+
+  const handleFormChange = (field: string, value: string) => {
+    setEventForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventForm.title || !eventForm.date) return;
+
+    try {
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: eventForm.title,
+          date: eventForm.date,
+          time: eventForm.time || undefined,
+          meatingLink: eventForm.meatingLink || undefined,
+          color: eventForm.color,
+        }),
+      });
+
+      if (response.ok) {
+        const newEvent = await response.json();
+        setEvents((prev) => [...prev, newEvent]);
+        handleCloseModal();
+      } else {
+        console.error("Failed to create event");
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+    }
+  };
 
   const headerLabel = useMemo(() => {
     if (currentView === "month") {
@@ -182,15 +314,19 @@ const SchedulePage = () => {
   }, [currentView, focusDate, weekDays]);
 
   const renderEventChip = (event: CalendarEvent) => (
-    <div
+    <button
       key={event.id}
-      className={`mt-1 text-[11px] font-medium px-2 py-1 rounded ${
+      onClick={() => handleEventClick(event)}
+      className={`mt-1 text-[11px] font-medium px-2 py-1 rounded w-full text-left hover:opacity-80 transition-opacity ${
         eventColorStyles[event.color]
       }`}
     >
-      <div className="leading-tight">{event.title}</div>
+      <div className="leading-tight flex items-center gap-1">
+        <span>{eventColorEmojis[event.color]}</span>
+        <span>{event.title}</span>
+      </div>
       {event.time && <div className="text-[10px] opacity-80">{event.time}</div>}
-    </div>
+    </button>
   );
 
   const MonthView = () => (
@@ -316,7 +452,10 @@ const SchedulePage = () => {
                             eventColorStyles[event.color]
                           }`}
                         >
-                          <div>{event.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span>{eventColorEmojis[event.color]}</span>
+                            <span>{event.title}</span>
+                          </div>
                           {event.time && (
                             <div className="text-[11px] opacity-80">
                               {event.time}
@@ -348,7 +487,10 @@ const SchedulePage = () => {
                 eventColorStyles[event.color]
               }`}
             >
-              <div className="text-sm font-semibold">{event.title}</div>
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <span>{eventColorEmojis[event.color]}</span>
+                <span>{event.title}</span>
+              </div>
               {event.time && (
                 <div className="text-[11px] opacity-80">{event.time}</div>
               )}
@@ -429,13 +571,24 @@ const SchedulePage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-2 px-4 py-2 border-[0.89px] border-[#FF4B00]  text-orange-500 rounded-lg hover:bg-orange-50 text-sm font-semibold">
+                  <button
+                    onClick={handleOpenFilter}
+                    className="flex items-center gap-2 px-4 py-2 border-[0.89px] border-[#FF4B00] text-orange-500 rounded-lg hover:bg-orange-50 text-sm font-semibold relative"
+                  >
                     <FilterIcon size={16} />
                     Filter
+                    {selectedColors.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {selectedColors.length}
+                      </span>
+                    )}
                   </button>
                   {/* seperator */}
                   <div className="w-px h-8 bg-gray-300" />
-                  <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold">
+                  <button
+                    onClick={handleAddEvent}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold"
+                  >
                     <Plus size={16} />
                     Add Event
                   </button>
@@ -478,6 +631,383 @@ const SchedulePage = () => {
           </div>
         </div>
       </div>
+
+      {showEventModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                Add New Event
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitEvent} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  value={eventForm.title}
+                  onChange={(e) => handleFormChange("title", e.target.value)}
+                  placeholder="Enter event title"
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={eventForm.date}
+                  onChange={(e) => handleFormChange("date", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={eventForm.time}
+                  onChange={(e) => handleFormChange("time", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Meeting Link
+                </label>
+                <input
+                  type="url"
+                  value={eventForm.meatingLink}
+                  onChange={(e) =>
+                    handleFormChange("meatingLink", e.target.value)
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Color Tag
+                </label>
+                <div className="grid grid-cols-4 gap-3">
+                  {(["yellow", "green", "red", "purple"] as const).map(
+                    (color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => handleFormChange("color", color)}
+                        className={`px-4 py-3 rounded-lg border-2 transition-all capitalize ${
+                          eventForm.color === color
+                            ? "border-orange-500 ring-2 ring-orange-200"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                        } ${
+                          color === "yellow"
+                            ? "bg-yellow-50 text-yellow-700"
+                            : color === "green"
+                              ? "bg-green-50 text-green-700"
+                              : color === "red"
+                                ? "bg-red-50 text-red-600"
+                                : "bg-purple-50 text-purple-600"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                >
+                  Add Event
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-md w-full">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                Filter Events
+              </h2>
+              <button
+                onClick={handleCloseFilterModal}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Filter by Color
+                </label>
+                <div className="space-y-3">
+                  {(["yellow", "green", "red", "purple"] as const).map(
+                    (color) => {
+                      const isSelected = selectedColors.includes(color);
+                      const colorCount = events.filter(
+                        (e) => e.color === color,
+                      ).length;
+
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => toggleColorFilter(color)}
+                          className={`w-full px-4 py-3 rounded-lg border-2 transition-all flex items-center justify-between ${
+                            isSelected
+                              ? "border-orange-500 ring-2 ring-orange-200"
+                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                          } ${
+                            color === "yellow"
+                              ? "bg-yellow-50 text-yellow-700"
+                              : color === "green"
+                                ? "bg-green-50 text-green-700"
+                                : color === "red"
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-purple-50 text-purple-600"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                isSelected
+                                  ? "border-current"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="w-3 h-3"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="font-semibold capitalize">
+                              {color}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium opacity-75">
+                            {colorCount} {colorCount === 1 ? "event" : "events"}
+                          </span>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+
+              {selectedColors.length > 0 && (
+                <div className="pt-2">
+                  <button
+                    onClick={clearFilters}
+                    className="w-full px-4 py-2 text-sm font-semibold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseFilterModal}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCloseFilterModal}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                >
+                  Apply Filter
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEventDetailModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-md w-full">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                Event Details
+              </h2>
+              <button
+                onClick={handleCloseEventDetailModal}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                  Event Title
+                </label>
+                <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <span className="text-2xl">
+                    {eventColorEmojis[selectedEvent.color]}
+                  </span>
+                  <span>{selectedEvent.title}</span>
+                </div>
+              </div>
+
+              {(() => {
+                const timeRemaining = getTimeRemaining(selectedEvent);
+                if (timeRemaining) {
+                  return (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-4 h-4 text-orange-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <div>
+                          <div className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                            Starts in
+                          </div>
+                          <div className="text-sm font-bold text-orange-700 dark:text-orange-300">
+                            {timeRemaining}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                    Date
+                  </label>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {new Date(
+                      selectedEvent.date + "T00:00:00",
+                    ).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                </div>
+
+                {selectedEvent.time && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                      Time
+                    </label>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {selectedEvent.time}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                  Color Tag
+                </label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold capitalize ${
+                      selectedEvent.color === "yellow"
+                        ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                        : selectedEvent.color === "green"
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : selectedEvent.color === "red"
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : "bg-purple-50 text-purple-600 border border-purple-200"
+                    }`}
+                  >
+                    {selectedEvent.color}
+                  </div>
+                </div>
+              </div>
+
+              {selectedEvent.meatingLink && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                    Meeting Link
+                  </label>
+                  <a
+                    href={selectedEvent.meatingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-orange-500 hover:text-orange-600 font-medium underline break-all"
+                  >
+                    {selectedEvent.meatingLink}
+                  </a>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleCloseEventDetailModal}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

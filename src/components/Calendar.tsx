@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {};
 
-const Calendar = (props: Props) => {
+const CalendarView = (props: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 1)); // June 2024
 
   const monthNames = [
@@ -121,4 +121,4 @@ const Calendar = (props: Props) => {
   );
 };
 
-export default Calendar;
+export default CalendarView;

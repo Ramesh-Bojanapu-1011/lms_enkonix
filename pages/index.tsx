@@ -1,4 +1,4 @@
-import Calendar from "@/components/Calendar";
+import CalendarView from "@/components/Calendar";
 import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
 import {
@@ -433,7 +433,7 @@ export default function Home() {
 
               {/* Calendar - Full width on tablet, 1/3 on desktop */}
               <div className="md:col-span-2 lg:col-span-1">
-                <Calendar />
+                <CalendarView />
               </div>
             </div>
 

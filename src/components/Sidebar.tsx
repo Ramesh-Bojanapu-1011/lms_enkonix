@@ -28,7 +28,7 @@ const Sidebar = (props: Props) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashbord" },
     { icon: FileText, label: "Assignments", path: "/assignments" },
     { icon: Calendar, label: "Schedule", path: "/schedule" },
     { icon: Video, label: "Recordings", path: "/recordings" },

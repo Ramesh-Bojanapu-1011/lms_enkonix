@@ -189,7 +189,9 @@ const Assignments = () => {
                     "Archive this assignment? This will remove it for all users.",
                   );
                   if (!confirmed) return;
-                  setAssignments((prev) => prev.filter((a) => a.id !== item.id));
+                  setAssignments((prev) =>
+                    prev.filter((a) => a.id !== item.id),
+                  );
                   fetch("/api/assignments", {
                     method: "DELETE",
                     headers: { "Content-Type": "application/json" },
