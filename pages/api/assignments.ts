@@ -10,6 +10,7 @@ type Assignment = {
   status: "Pending" | "Progress" | "Done";
   students: string[];
   submission?: { url: string; submittedAt: Date; fileName: string };
+  grade?: number;
 };
 
 type ResponseData = {

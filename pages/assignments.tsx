@@ -15,6 +15,7 @@ type Assignment = {
   status: AssignmentStatus;
   students: string[];
   submission?: { url: string; submittedAt: Date; fileName: string };
+  grade?: number;
 };
 
 type Role = "Student" | "Faculty" | "Admin";
@@ -45,12 +46,19 @@ const Assignments = () => {
   const [studentInputs, setStudentInputs] = React.useState<
     Record<number, string>
   >({});
+  const [gradeInputs, setGradeInputs] = React.useState<Record<number, string>>(
+    {},
+  );
   const [submitModal, setSubmitModal] = React.useState<{
     assignmentId: number;
     file: File | null;
   } | null>(null);
   const [reviewModal, setReviewModal] = React.useState<{
     assignmentId: number;
+  } | null>(null);
+  const [gradeModal, setGradeModal] = React.useState<{
+    assignmentId: number;
+    currentGrade?: number;
   } | null>(null);
   const [uploadingFileId, setUploadingFileId] = React.useState<number | null>(
     null,
@@ -140,6 +148,15 @@ const Assignments = () => {
                   setSubmitModal({ assignmentId: item.id, file: null });
                 } else if (action === "Review") {
                   setReviewModal({ assignmentId: item.id });
+                } else if (action === "Grade") {
+                  setGradeInputs((prev) => ({
+                    ...prev,
+                    [item.id]: item.grade?.toString() || "",
+                  }));
+                  setGradeModal({
+                    assignmentId: item.id,
+                    currentGrade: item.grade,
+                  });
                 }
               }}
               className="px-3 py-1 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -715,6 +732,127 @@ const Assignments = () => {
                     className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Grade Modal */}
+      {gradeModal &&
+        (() => {
+          const assignment = assignments.find(
+            (a) => a.id === gradeModal.assignmentId,
+          );
+          const gradeValue = gradeInputs[gradeModal.assignmentId] || "";
+
+          const handleGradeSubmit = () => {
+            const grade = parseFloat(gradeValue);
+            if (isNaN(grade) || grade < 0 || grade > 10) {
+              alert("Please enter a valid grade between 0 and 10");
+              return;
+            }
+
+            setAssignments((prev) =>
+              prev.map((a) =>
+                a.id === gradeModal.assignmentId ? { ...a, grade } : a,
+              ),
+            );
+
+            // Update in database
+            fetch("/api/assignments", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: gradeModal.assignmentId,
+                grade,
+              }),
+            })
+              .then((res) => {
+                if (res.ok) {
+                  setGradeModal(null);
+                  setGradeInputs((prev) => {
+                    const updated = { ...prev };
+                    delete updated[gradeModal.assignmentId];
+                    return updated;
+                  });
+                  setStatus(gradeModal.assignmentId, "Done");
+                } else {
+                  throw new Error("Failed to save grade");
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to save grade:", error);
+                alert("Failed to save grade. Please try again.");
+              });
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 w-96 flex flex-col">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Grade Assignment
+                </h2>
+                <div className="flex-1 flex flex-col gap-4 mb-6">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Assignment
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {assignment?.title}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
+                      Grade (0-10)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={gradeValue}
+                      onChange={(e) =>
+                        setGradeInputs((prev) => ({
+                          ...prev,
+                          [gradeModal.assignmentId]: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter grade"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  {assignment?.grade !== undefined && (
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Current Grade
+                      </p>
+                      <p className="text-2xl font-bold text-orange-500">
+                        {assignment.grade}/10
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      setGradeModal(null);
+                      setGradeInputs((prev) => {
+                        const updated = { ...prev };
+                        delete updated[gradeModal.assignmentId];
+                        return updated;
+                      });
+                    }}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleGradeSubmit}
+                    className="px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+                  >
+                    Save Grade
                   </button>
                 </div>
               </div>

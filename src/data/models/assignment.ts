@@ -20,6 +20,9 @@ const assignmentSchema = new Schema({
   students: {
     type: [String],
   },
+  grade: {
+    type: Number,
+  },
   submission: {
     url: {
       type: String,
