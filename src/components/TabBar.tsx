@@ -1,11 +1,23 @@
-import { Bell, ChevronDown, Search } from "lucide-react";
+import { Bell, ChevronDown, Search, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/router";
 import { ModeToggle } from "./theme/ModeToggle";
 
 type Props = {};
 
 const TabBar = (props: Props) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear localStorage items
+    localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("token");
+    // Redirect to login page
+    router.push("/login");
+  };
 
   return (
     <div className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between h-16.25">
@@ -83,18 +95,41 @@ const TabBar = (props: Props) => {
         </div>
 
         {/* User Profile */}
-        <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded-lg">
-          <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
-            <img
-              src="https://res.cloudinary.com/dczbqwyyc/image/upload/v1767460315/c8a541adabbe9e4a0605b7cfe1900c7a70aad76a_kgemqv.png"
-              alt="User Avatar"
-              className="w-full h-full object-cover"
+        <div className="relative">
+          <div
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 px-2 py-1 rounded-lg"
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+          >
+            <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
+              <img
+                src="https://res.cloudinary.com/dczbqwyyc/image/upload/v1767460315/c8a541adabbe9e4a0605b7cfe1900c7a70aad76a_kgemqv.png"
+                alt="User Avatar"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <span className="font-medium text-gray-800 dark:text-gray-200">
+              John Dev
+            </span>
+            <ChevronDown
+              size={16}
+              className={`text-gray-600 dark:text-gray-400 transition-transform ${
+                showProfileDropdown ? "rotate-180" : ""
+              }`}
             />
           </div>
-          <span className="font-medium text-gray-800 dark:text-gray-200">
-            Harsh
-          </span>
-          <ChevronDown size={16} className="text-gray-600 dark:text-gray-400" />
+
+          {/* Dropdown Menu */}
+          {showProfileDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

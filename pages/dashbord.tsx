@@ -8,26 +8,22 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
-  Circle,
   Clock,
-  FileText,
   MapPin,
+  Menu,
   MessageSquare,
   Pencil,
   Pin,
+  Plus,
   TrendingUp,
   Upload,
   Users,
-  Image,
-  File,
   Video,
   X,
-  Plus,
-  Menu,
 } from "lucide-react";
+import Head from "next/head";
 import React from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis } from "recharts";
-import Head from "next/head";
 
 type Props = {};
 interface TodoProps {

@@ -6,7 +6,7 @@ import { Mail, Lock, Shield } from "lucide-react";
 const roles = ["Student", "Faculty", "Admin"] as const;
 type Role = (typeof roles)[number];
 
-function index() {
+export default function LoginPage() {
   const router = useRouter();
   const [role, setRole] = useState<Role>("Student");
   const [email, setEmail] = useState("");
@@ -15,7 +15,7 @@ function index() {
   const [error, setError] = useState<string | null>(null);
 
   const roleRedirect: Record<Role, string> = {
-    Student: "/dashbord",
+    Student: "/",
     Faculty: "/courses",
     Admin: "/dashbord",
   };
@@ -195,5 +195,3 @@ function index() {
     </>
   );
 }
-
-export default index;

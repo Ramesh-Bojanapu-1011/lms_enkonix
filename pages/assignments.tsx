@@ -92,6 +92,22 @@ const Assignments = () => {
       }
     };
     loadAssignments();
+
+    setRole(() => {
+      if (typeof window !== "undefined") {
+        const storedRole = localStorage.getItem("role");
+
+        if (
+          storedRole === "Student" ||
+          storedRole === "Faculty" ||
+          storedRole === "Admin"
+        ) {
+          return storedRole;
+        }
+        return "Student";
+      }
+      return "Student";
+    });
   }, []);
 
   const setStatus = (id: number, status: AssignmentStatus) => {
@@ -426,21 +442,6 @@ const Assignments = () => {
                     placeholder="Search assignments"
                     className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
-                </div>
-                <div className="inline-flex rounded-lg border w-fit border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
-                  {["Student", "Faculty", "Admin"].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setRole(r as Role)}
-                      className={`px-4 py-2 text-sm font-semibold transition-colors ${
-                        role === r
-                          ? "bg-orange-500 text-white"
-                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>

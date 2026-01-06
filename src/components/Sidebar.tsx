@@ -1,19 +1,19 @@
-import React, { useState } from "react";
 import {
-  LayoutDashboard,
-  FileText,
   Calendar,
-  Video,
-  MessageSquare,
-  FolderOpen,
-  StickyNote,
-  Download,
-  Users,
-  GraduationCap,
-  Settings,
   ChevronLeft,
   ChevronRight,
+  Download,
+  FileText,
+  FolderOpen,
+  GraduationCap,
+  LayoutDashboard,
+  Settings,
+  StickyNote,
+  Users,
+  UsersRound,
+  Video,
 } from "lucide-react";
+import React, { useState } from "react";
 
 type MenuItem = {
   icon: React.ElementType;
@@ -32,7 +32,7 @@ const Sidebar = (props: Props) => {
     { icon: FileText, label: "Assignments", path: "/assignments" },
     { icon: Calendar, label: "Schedule", path: "/schedule" },
     { icon: Video, label: "Recordings", path: "/recordings" },
-    { icon: MessageSquare, label: "Discussions", path: "/discussions" },
+    { icon: UsersRound, label: "Discussions", path: "/discussions" },
     { icon: FolderOpen, label: "Resources", path: "/resources" },
     { icon: StickyNote, label: "Notes", path: "/notes" },
     { icon: Download, label: "Downloads", path: "/downloads" },
