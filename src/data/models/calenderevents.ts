@@ -20,6 +20,10 @@ const eventSchema = new Schema({
   color: {
     type: String,
   },
+  assignedTo: {
+    type: [String],
+    default: [],
+  },
 });
 
 //Export the model

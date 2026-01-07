@@ -8,22 +8,30 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
+  Circle,
   Clock,
+  FileText,
   MapPin,
-  Menu,
   MessageSquare,
   Pencil,
   Pin,
-  Plus,
   TrendingUp,
   Upload,
   Users,
+  Image,
+  File,
   Video,
   X,
+  Plus,
+  Menu,
+  Shield,
+  GraduationCap,
+  UserCheck,
 } from "lucide-react";
-import Head from "next/head";
 import React from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis } from "recharts";
+import Head from "next/head";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Props = {};
 interface TodoProps {
@@ -66,6 +74,7 @@ const recentGrades = [
 ];
 
 const dashbord = (props: Props) => {
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [downloadProgress, setDownloadProgress] = React.useState<{
     [key: number]: number;
@@ -115,7 +124,7 @@ const dashbord = (props: Props) => {
   ) => {
     setNewTodo((prev) => ({ ...prev, [field]: value }));
   };
-  const handleTodoSubmit = (e: React.FormEvent) => {
+  const handleTodoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.task.trim()) return;
     const item: TodoProps = {
@@ -123,46 +132,62 @@ const dashbord = (props: Props) => {
       date: newTodo.date || "",
       completed: false,
     };
-    fetch("/api/addtodolist", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(item),
-    }).then((res) => {
-      if (res.ok) {
-        setTodoList((prev) => [...prev, item]);
-        console.log("Todo item submitted successfully");
-      } else {
-        console.error("Failed to submit todo item");
-      }
-    });
+    try {
+      const response = await fetch("/api/addtodolist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(item),
+      });
 
-    setShowTodoModal(false);
-    setNewTodo({ task: "", date: "", completed: false });
-  };
-  const handleTodoToggle = (task: string) => {
-    fetch("/api/updatetodolist", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        task: task,
-        completed: !todoList.find((item) => item.task === task)?.completed,
-      }),
-    }).then((res) => {
-      if (res.ok) {
-        setTodoList((prev) =>
-          prev.map((item) =>
-            item.task === task ? { ...item, completed: !item.completed } : item,
-          ),
-        );
-        console.log("Todo item updated successfully");
-      } else {
-        console.error("Failed to update todo item");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        await response.json();
+      }
+
+      setTodoList((prev) => [...prev, item]);
+      setShowTodoModal(false);
+      setNewTodo({ task: "", date: "", completed: false });
+    } catch (error) {
+      console.error("Failed to submit todo item:", error);
+      alert("Failed to add todo item. Please try again.");
+    }
+  };
+  const handleTodoToggle = async (task: string) => {
+    try {
+      const response = await fetch("/api/updatetodolist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          task: task,
+          completed: !todoList.find((item) => item.task === task)?.completed,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        await response.json();
+      }
+
+      setTodoList((prev) =>
+        prev.map((item) =>
+          item.task === task ? { ...item, completed: !item.completed } : item,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to update todo item:", error);
+    }
   };
 
   const handleDownload = (index: number) => {
@@ -194,35 +219,96 @@ const dashbord = (props: Props) => {
   ) => {
     setNewResource((prev) => ({ ...prev, [field]: value }));
   };
-  const handleResourceSubmit = (e: React.FormEvent) => {
+  const handleResourceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newResource.name.trim()) return;
-    fetch("/api/addresources", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newResource),
-    }).then((res) => {
-      if (res.ok) {
-        setResources((prev) => [...prev, newResource]);
-        console.log("Resource submitted successfully");
-      } else {
-        console.error("Failed to submit resource");
-      }
-    });
-
-    setShowResourceModal(false);
-    setNewResource({ name: "", size: "", desc: "", type: "pdf", color: "red" });
-  };
-  React.useEffect(() => {
-    fetch("/api/getresources")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched resources:", data);
-        setResources(data.resources);
+    try {
+      const response = await fetch("/api/addresources", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newResource),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        await response.json();
+      }
+
+      setResources((prev) => [...prev, newResource]);
+      setShowResourceModal(false);
+      setNewResource({
+        name: "",
+        size: "",
+        desc: "",
+        type: "pdf",
+        color: "red",
+      });
+    } catch (error) {
+      console.error("Failed to submit resource:", error);
+      alert("Failed to add resource. Please try again.");
+    }
+  };
+  const [assignedTasks, setAssignedTasks] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const response = await fetch("/api/getresources");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        if (data.resources) {
+          setResources(data.resources);
+        }
+      } catch (error) {
+        console.error("Failed to fetch resources:", error);
+        setResources([]);
+      }
+    };
+    fetchResources();
   }, []);
+
+  React.useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await fetch(
+          `/api/tasks?role=${user?.role}&email=${user?.email}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        if (data.success && data.tasks) {
+          setAssignedTasks(data.tasks);
+        }
+      } catch (error) {
+        console.error("Failed to fetch tasks:", error);
+        setAssignedTasks([]);
+      }
+    };
+    fetchTasks();
+  }, [user]);
 
   const gpa = 3.8;
   const [selectedAnnouncement, setSelectedAnnouncement] =
@@ -254,7 +340,7 @@ const dashbord = (props: Props) => {
       room: "Lab 301",
       type: "practical",
       professor: "Dr. Smith",
-      link: "https://youtu.be/uKHUIYInOMs",
+      link: "https://teams.microsoft.com/meet/4130215984327?p=OQRlQMQCtq8OAnpopR",
       status: "live",
     },
     {
@@ -342,11 +428,15 @@ const dashbord = (props: Props) => {
       <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 bg-white dark:bg-gray-900 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 
+  transform transition-transform duration-300 
+  lg:relative lg:translate-x-0 
+  bg-white dark:bg-gray-900
+  h-screen overflow-y-auto overflow-x-hidden
+  ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <Sidebar />
+
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="lg:hidden absolute top-4 right-4 p-2 text-gray-500 dark:text-gray-400"
@@ -381,11 +471,30 @@ const dashbord = (props: Props) => {
             <div className="space-y-6">
               {/* Greeting */}
               <div className="animate-in fade-in duration-500">
-                <h1 className="text-2xl lg:text-3xl mb-2 text-gray-900 dark:text-gray-100 font-bold">
-                  Hello John Dev 👋
-                </h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl lg:text-3xl text-gray-900 dark:text-gray-100 font-bold">
+                    Hello {user?.name || "User"} 👋
+                  </h1>
+                  {user?.role && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30">
+                      {user.role === "Admin" && <Shield className="w-3 h-3" />}
+                      {user.role === "Faculty" && (
+                        <UserCheck className="w-3 h-3" />
+                      )}
+                      {user.role === "Student" && (
+                        <GraduationCap className="w-3 h-3" />
+                      )}
+                      {user.role}
+                    </span>
+                  )}
+                </div>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Let's learn something new today!
+                  {user?.role === "Admin" &&
+                    "Manage your learning management system"}
+                  {user?.role === "Faculty" &&
+                    "Manage your courses and students"}
+                  {user?.role === "Student" &&
+                    "Let's learn something new today!"}
                 </p>
               </div>
 
@@ -836,7 +945,10 @@ const dashbord = (props: Props) => {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {assignments.map((assignment, index) => (
+                    {(assignedTasks.length > 0
+                      ? assignedTasks
+                      : assignments
+                    ).map((assignment, index) => (
                       <div
                         key={index}
                         onClick={() => {}}
@@ -848,10 +960,11 @@ const dashbord = (props: Props) => {
                               {assignment.title}
                             </h4>
                             <p className="text-xs text-gray-600 dark:text-gray-300">
-                              {assignment.subject}
+                              {assignment.subject || assignment.course}
                             </p>
                           </div>
-                          {assignment.status === "urgent" && (
+                          {(assignment.status === "urgent" ||
+                            assignment.status === "created") && (
                             <AlertCircle
                               size={16}
                               className="text-red-500 shrink-0"
@@ -865,23 +978,28 @@ const dashbord = (props: Props) => {
                           />
                           <span
                             className={`${
-                              assignment.status === "urgent"
+                              assignment.status === "urgent" ||
+                              assignment.status === "created"
                                 ? "text-red-500 font-medium"
                                 : "dark:text-gray-400 text-gray-600"
                             }`}
                           >
-                            {assignment.dueDate}
+                            {assignment.dueDate
+                              ? new Date(
+                                  assignment.dueDate,
+                                ).toLocaleDateString()
+                              : "No due date"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 rounded-full h-1.5 overflow-hidden bg-gray-200 dark:bg-gray-700">
                             <div
                               className="bg-orange-500 h-1.5 rounded-full transition-all duration-500"
-                              style={{ width: `${assignment.progress}%` }}
+                              style={{ width: `${assignment.progress || 0}%` }}
                             ></div>
                           </div>
                           <span className="text-xs text-gray-600 dark:text-gray-300">
-                            {assignment.progress}%
+                            {assignment.progress || 0}%
                           </span>
                         </div>
                       </div>

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ViewMode = "month" | "week" | "day";
 
@@ -20,6 +21,7 @@ type CalendarEvent = {
   time?: string;
   meatingLink?: string;
   color: "yellow" | "green" | "red" | "purple";
+  assignedTo?: string[]; // Array of user emails or IDs
 };
 
 const monthNames = [
@@ -114,10 +116,13 @@ const SchedulePage = () => {
     time: "",
     meatingLink: "",
     color: "yellow" as CalendarEvent["color"],
+    assignedTo: [] as string[],
   });
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    // Fetch events from database on mount
+    // Fetch events from database whenever user role changes
     const fetchEvents = async () => {
       try {
         const response = await fetch("/api/events");
@@ -132,12 +137,24 @@ const SchedulePage = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [user]);
 
   const filteredEvents = useMemo(() => {
-    if (selectedColors.length === 0) return events;
-    return events.filter((event) => selectedColors.includes(event.color));
-  }, [events, selectedColors]);
+    // Start with color filtering
+    let base =
+      selectedColors.length === 0
+        ? events
+        : events.filter((event) => selectedColors.includes(event.color));
+
+    // If current user is a Student, hide events assigned to faculty
+    if (user?.role === "Student") {
+      base = base.filter(
+        (event) => !(event.assignedTo && event.assignedTo.includes("faculty")),
+      );
+    }
+
+    return base;
+  }, [events, selectedColors, user]);
 
   const eventsByDate = useMemo(
     () => groupEventsByDate(filteredEvents),
@@ -238,6 +255,7 @@ const SchedulePage = () => {
       time: "",
       meatingLink: "",
       color: "yellow",
+      assignedTo: [],
     });
   };
 
@@ -256,7 +274,11 @@ const SchedulePage = () => {
   };
 
   const handleFormChange = (field: string, value: string) => {
-    setEventForm((prev) => ({ ...prev, [field]: value }));
+    if (field === "assignedTo") {
+      setEventForm((prev) => ({ ...prev, assignedTo: JSON.parse(value) }));
+    } else {
+      setEventForm((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSubmitEvent = async (e: React.FormEvent) => {
@@ -275,6 +297,8 @@ const SchedulePage = () => {
           time: eventForm.time || undefined,
           meatingLink: eventForm.meatingLink || undefined,
           color: eventForm.color,
+          assignedTo:
+            eventForm.assignedTo.length > 0 ? eventForm.assignedTo : undefined,
         }),
       });
 
@@ -312,21 +336,28 @@ const SchedulePage = () => {
     } ${focusDate.getDate()}, ${focusDate.getFullYear()}`;
     return dayLabel;
   }, [currentView, focusDate, weekDays]);
-
+  const userRole = localStorage.getItem("role")?.toLowerCase();
   const renderEventChip = (event: CalendarEvent) => (
-    <button
-      key={event.id}
-      onClick={() => handleEventClick(event)}
-      className={`mt-1 text-[11px] font-medium px-2 py-1 rounded w-full text-left hover:opacity-80 transition-opacity ${
-        eventColorStyles[event.color]
-      }`}
-    >
-      <div className="leading-tight flex items-center gap-1">
-        <span>{eventColorEmojis[event.color]}</span>
-        <span>{event.title}</span>
-      </div>
-      {event.time && <div className="text-[10px] opacity-80">{event.time}</div>}
-    </button>
+    <>
+      {userRole !== "student" ||
+        (!(event.assignedTo && event.assignedTo.includes("faculty")) && (
+          <button
+            key={event.id}
+            onClick={() => handleEventClick(event)}
+            className={`mt-1 text-[11px] font-medium px-2 py-1 rounded w-full text-left hover:opacity-80 transition-opacity ${
+              eventColorStyles[event.color]
+            }`}
+          >
+            <div className="leading-tight flex items-center gap-1">
+              <span>{eventColorEmojis[event.color]}</span>
+              <span>{event.title}</span>
+            </div>
+            {event.time && (
+              <div className="text-[10px] opacity-80">{event.time}</div>
+            )}
+          </button>
+        ))}
+    </>
   );
 
   const MonthView = () => (
@@ -510,9 +541,12 @@ const SchedulePage = () => {
 
       <div className="flex h-screen bg-gray-50 overflow-hidden">
         <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out bg-white lg:relative lg:translate-x-0 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-50 
+  transform transition-transform duration-300 
+  lg:relative lg:translate-x-0 
+  bg-white dark:bg-gray-900
+  h-screen overflow-y-auto overflow-x-hidden
+  ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <Sidebar />
           <button
@@ -584,14 +618,18 @@ const SchedulePage = () => {
                     )}
                   </button>
                   {/* seperator */}
-                  <div className="w-px h-8 bg-gray-300" />
-                  <button
-                    onClick={handleAddEvent}
-                    className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold"
-                  >
-                    <Plus size={16} />
-                    Add Event
-                  </button>
+                  {user?.role !== "Student" && (
+                    <>
+                      <div className="w-px h-8 bg-gray-300" />
+                      <button
+                        onClick={handleAddEvent}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold"
+                      >
+                        <Plus size={16} />
+                        Add Event
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -731,6 +769,43 @@ const SchedulePage = () => {
                       </button>
                     ),
                   )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Assign To
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                  {[
+                    { label: "Faculty", value: "faculty" },
+                    { label: "Students", value: "students" },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={eventForm.assignedTo.includes(option.value)}
+                        onChange={(e) => {
+                          const newAssigned = e.target.checked
+                            ? [...eventForm.assignedTo, option.value]
+                            : eventForm.assignedTo.filter(
+                                (a) => a !== option.value,
+                              );
+                          handleFormChange(
+                            "assignedTo",
+                            JSON.stringify(newAssigned),
+                          );
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-orange-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

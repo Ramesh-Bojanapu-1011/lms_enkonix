@@ -1,19 +1,21 @@
+import React, { useState } from "react";
 import {
+  LayoutDashboard,
+  FileText,
   Calendar,
+  Video,
+  MessageSquare,
+  FolderOpen,
+  StickyNote,
+  Download,
+  Users,
+  GraduationCap,
+  Settings,
   ChevronLeft,
   ChevronRight,
-  Download,
-  FileText,
-  FolderOpen,
-  GraduationCap,
-  LayoutDashboard,
-  Settings,
-  StickyNote,
-  Users,
-  UsersRound,
-  Video,
+  LogOut,
 } from "lucide-react";
-import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 type MenuItem = {
   icon: React.ElementType;
@@ -26,20 +28,61 @@ type Props = {};
 const Sidebar = (props: Props) => {
   const [activeItem, setActiveItem] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user, logout } = useAuth();
 
-  const menuItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashbord" },
-    { icon: FileText, label: "Assignments", path: "/assignments" },
-    { icon: Calendar, label: "Schedule", path: "/schedule" },
-    { icon: Video, label: "Recordings", path: "/recordings" },
-    { icon: UsersRound, label: "Discussions", path: "/discussions" },
-    { icon: FolderOpen, label: "Resources", path: "/resources" },
-    { icon: StickyNote, label: "Notes", path: "/notes" },
-    { icon: Download, label: "Downloads", path: "/downloads" },
-    { icon: Users, label: "Classes", path: "/classes" },
-    { icon: GraduationCap, label: "Courses", path: "/courses" },
-    { icon: Settings, label: "Settings", path: "/settings" },
-  ];
+  // Role-based menu items
+  const getMenuItems = (): MenuItem[] => {
+    const baseItems: MenuItem[] = [
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashbord" },
+    ];
+
+    if (user?.role === "Admin") {
+      return [
+        ...baseItems,
+        { icon: Users, label: "Users", path: "/users" },
+        { icon: FileText, label: "Tasks", path: "/tasks" },
+        { icon: GraduationCap, label: "Courses", path: "/courses" },
+        { icon: FileText, label: "Assignments", path: "/assignments" },
+        { icon: Calendar, label: "Schedule", path: "/schedule" },
+        { icon: Video, label: "Recordings", path: "/recordings" },
+        { icon: MessageSquare, label: "Discussions", path: "/discussions" },
+        { icon: FolderOpen, label: "Resources", path: "/resources" },
+        { icon: FileText, label: "Content Manager", path: "/admin-content" },
+        { icon: Settings, label: "Settings", path: "/settings" },
+      ];
+    } else if (user?.role === "Faculty") {
+      return [
+        ...baseItems,
+        { icon: FileText, label: "Tasks", path: "/tasks" },
+        { icon: FileText, label: "Assignments", path: "/assignments" },
+        { icon: Calendar, label: "Schedule", path: "/schedule" },
+        { icon: Video, label: "Recordings", path: "/recordings" },
+        { icon: MessageSquare, label: "Discussions", path: "/discussions" },
+        { icon: FolderOpen, label: "Resources", path: "/resources" },
+        { icon: Users, label: "Students", path: "/students" },
+        { icon: GraduationCap, label: "Courses", path: "/courses" },
+        { icon: FileText, label: "Create Content", path: "/faculty-content" },
+        { icon: Settings, label: "Settings", path: "/settings" },
+      ];
+    } else {
+      // Student role
+      return [
+        ...baseItems,
+        { icon: FileText, label: "Tasks", path: "/tasks" },
+        { icon: FileText, label: "Assignments", path: "/assignments" },
+        { icon: Calendar, label: "Schedule", path: "/schedule" },
+        { icon: Video, label: "Videos", path: "/student-videos" },
+        { icon: MessageSquare, label: "Discussions", path: "/discussions" },
+        { icon: FolderOpen, label: "Resources", path: "/resources" },
+        { icon: StickyNote, label: "Notes", path: "/student-notes" },
+        { icon: Download, label: "Downloads", path: "/downloads" },
+        { icon: GraduationCap, label: "Courses", path: "/courses" },
+        { icon: Settings, label: "Settings", path: "/settings" },
+      ];
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   React.useEffect(() => {
     const currentPath = window.location.pathname;
@@ -47,7 +90,7 @@ const Sidebar = (props: Props) => {
     if (currentItem) {
       setActiveItem(currentItem.label);
     }
-  }, []);
+  }, [menuItems]);
 
   return (
     <div
@@ -141,6 +184,45 @@ const Sidebar = (props: Props) => {
           );
         })}
       </nav>
+
+      {/* User Info & Logout */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+        {!isCollapsed && user && (
+          <div className="px-5 py-2 text-sm">
+            <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+              {user.name}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {user.email}
+            </p>
+            <p className="text-xs text-orange-500 font-medium mt-1">
+              {user.role}
+            </p>
+          </div>
+        )}
+        <button
+          onClick={() => {
+            if (window.confirm("Are you sure you want to logout?")) {
+              logout();
+            }
+          }}
+          className={`
+            w-full flex items-center ${
+              isCollapsed ? "justify-center p-3" : "gap-4 px-5 py-3"
+            } rounded-lg text-left transition-all text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:shadow-md active:scale-95
+          `}
+          title={isCollapsed ? "Logout" : "Click to logout"}
+        >
+          <LogOut size={20} className="flex-shrink-0" />
+          <span
+            className={`font-medium transition-opacity duration-300 ${
+              isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
+            }`}
+          >
+            {!isCollapsed && "Logout"}
+          </span>
+        </button>
+      </div>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
 import { Menu, Search, X } from "lucide-react";
 import React from "react";
-
+import { useAuth } from "@/contexts/AuthContext";
 import Head from "next/head";
 
 type AssignmentStatus = "Pending" | "Progress" | "Done";
@@ -33,8 +33,8 @@ const statusDot: Record<AssignmentStatus, string> = {
 };
 
 const Assignments = () => {
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const [role, setRole] = React.useState<Role>("Student");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [newAssignment, setNewAssignment] = React.useState({
@@ -80,7 +80,9 @@ const Assignments = () => {
   React.useEffect(() => {
     const loadAssignments = async () => {
       try {
-        const response = await fetch("/api/assignments");
+        const response = await fetch(
+          `/api/assignments?role=${user?.role}&email=${user?.email}`,
+        );
         if (response.ok) {
           const data = await response.json();
           if (data.data) {
@@ -92,23 +94,7 @@ const Assignments = () => {
       }
     };
     loadAssignments();
-
-    setRole(() => {
-      if (typeof window !== "undefined") {
-        const storedRole = localStorage.getItem("role");
-
-        if (
-          storedRole === "Student" ||
-          storedRole === "Faculty" ||
-          storedRole === "Admin"
-        ) {
-          return storedRole;
-        }
-        return "Student";
-      }
-      return "Student";
-    });
-  }, []);
+  }, [user]);
 
   const setStatus = (id: number, status: AssignmentStatus) => {
     setAssignments((prev) =>
@@ -140,7 +126,7 @@ const Assignments = () => {
   };
 
   const renderActions = (item: Assignment) => {
-    const actions = roleActions[role];
+    const actions = roleActions[user?.role as Role];
     const studentInput = studentInputs[item.id] || "";
 
     const addStudent = () => {
@@ -222,7 +208,7 @@ const Assignments = () => {
               {action}
             </button>
           ))}
-          {role !== "Admin" && (
+          {user?.role !== "Admin" && (
             <select
               value={item.status}
               onChange={(e) =>
@@ -237,7 +223,7 @@ const Assignments = () => {
           )}
         </div>
 
-        {role === "Faculty" && (
+        {user?.role === "Faculty" && (
           <div className="flex w-full gap-2">
             <input
               value={studentInput}
@@ -479,7 +465,7 @@ const Assignments = () => {
               </div>
             </div>
 
-            {role === "Faculty" && (
+            {user?.role === "Faculty" && (
               <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                   Create assignment
@@ -544,13 +530,13 @@ const Assignments = () => {
             <div className="hidden md:block border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
               <div
                 className={`grid ${
-                  role != "Student" ? "grid-cols-6" : "grid-cols-5"
+                  user?.role != "Student" ? "grid-cols-6" : "grid-cols-5"
                 } text-xs font-semibold text-gray-600 dark:text-gray-300 px-4 py-3 bg-gray-50 dark:bg-gray-800`}
               >
                 <div className=" ">Assignment</div>
                 <div className=" ">Course</div>
                 <div className="">Due</div>
-                {(role == "Faculty" || role == "Admin") && (
+                {(user?.role == "Faculty" || user?.role == "Admin") && (
                   <div className="">Students</div>
                 )}
                 <div className="">Status</div>
@@ -561,7 +547,7 @@ const Assignments = () => {
                   <div
                     key={item.id}
                     className={`grid ${
-                      role != "Student" ? "grid-cols-6" : "grid-cols-5"
+                      user?.role != "Student" ? "grid-cols-6" : "grid-cols-5"
                     } items-center px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800`}
                   >
                     <div className="  font-semibold text-gray-800 dark:text-gray-100 truncate">
@@ -573,7 +559,7 @@ const Assignments = () => {
                     <div className="  text-gray-600 dark:text-gray-300">
                       {item.dueDate}
                     </div>
-                    {(role == "Faculty" || role == "Admin") && (
+                    {(user?.role == "Faculty" || user?.role == "Admin") && (
                       <div className="  text-gray-600 dark:text-gray-300 truncate">
                         {item.students.length ? item.students.join(", ") : "—"}
                       </div>

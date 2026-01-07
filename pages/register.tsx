@@ -56,8 +56,12 @@ export default function RegisterPage() {
               <Shield size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create account</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Register as Student, Faculty or Admin</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Create account
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Register as Student, Faculty or Admin
+              </p>
             </div>
           </div>
 
@@ -80,7 +84,9 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Full name</label>
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                Full name
+              </label>
               <div className="mt-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <input
                   value={name}
@@ -93,7 +99,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Email</label>
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                Email
+              </label>
               <div className="mt-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <Mail size={16} className="text-gray-400" />
                 <input
@@ -108,7 +116,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Password</label>
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                Password
+              </label>
               <div className="mt-1 flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <Lock size={16} className="text-gray-400" />
                 <input
@@ -123,7 +133,9 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg px-3 py-2">{error}</div>
+              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg px-3 py-2">
+                {error}
+              </div>
             )}
 
             <button

@@ -27,7 +27,6 @@ export default async function handler(
   res: NextApiResponse<ResponseData>,
 ) {
   try {
-    await connectDB();
     if (req.method === "GET") {
       assignments = await assignment.find();
 

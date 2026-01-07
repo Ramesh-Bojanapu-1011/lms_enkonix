@@ -1,37 +1,30 @@
 import mongoose, { Schema } from "mongoose";
 
-const courseSchema = new Schema(
+const recordingSchema = new Schema(
   {
-    name: {
+    title: {
       type: String,
       required: true,
-      unique: true,
-    },
-    code: {
-      type: String,
-      required: true,
-      unique: true,
     },
     description: {
       type: String,
     },
-    instructor: {
+    course: {
       type: String,
       required: true,
     },
-    semester: {
+    recordingUrl: {
+      type: String,
+      required: true,
+    },
+    thumbnail: {
       type: String,
     },
-    credits: {
+    duration: {
       type: Number,
     },
-    enrolledStudents: {
-      type: [String],
-      default: [],
-    },
-    enrolledFaculty: {
-      type: [String],
-      default: [],
+    recordedDate: {
+      type: Date,
     },
     createdBy: {
       type: String,
@@ -41,8 +34,13 @@ const courseSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    assignedTo: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true },
 );
 
-export default mongoose.models.Course || mongoose.model("Course", courseSchema);
+export default mongoose.models.Recording ||
+  mongoose.model("Recording", recordingSchema);

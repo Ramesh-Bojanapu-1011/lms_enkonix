@@ -1,4 +1,5 @@
 import calenderevents from "@/data/models/calenderevents";
+import { connectDB } from "@/data/database/mangodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 type CalendarEvent = {
@@ -7,6 +8,7 @@ type CalendarEvent = {
   time?: string;
   meatingLink?: string;
   color: "yellow" | "green" | "red" | "purple";
+  assignedTo?: string[];
 };
 
 // In-memory storage (replace with actual database)
@@ -16,6 +18,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("DB connect error:", err);
+    return res.status(500).json({ error: "Database connection failed" });
+  }
   if (req.method === "GET") {
     // Fetch all events
     events = await calenderevents.find();
@@ -24,7 +32,7 @@ export default async function handler(
 
   if (req.method === "POST") {
     // Create new event
-    const { title, date, time, meatingLink, color } = req.body;
+    const { title, date, time, meatingLink, color, assignedTo } = req.body;
 
     if (!title || !date) {
       return res.status(400).json({ error: "Title and date are required" });
@@ -35,6 +43,7 @@ export default async function handler(
       time,
       meatingLink,
       color,
+      assignedTo: assignedTo || [],
     });
     return res.status(201).json(newEvent);
   }
