@@ -22,11 +22,21 @@ type ResponseData = {
 // In-memory storage (replace with database in production)
 let assignments: Assignment[] = [];
 
+// Increase body size limit to 5MB for file uploads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '5mb',
+    },
+  },
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>,
 ) {
   try {
+    await connectDB();
     if (req.method === "GET") {
       assignments = await assignment.find();
 

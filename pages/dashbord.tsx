@@ -476,7 +476,7 @@ const dashbord = (props: Props) => {
                     Hello {user?.name || "User"} 👋
                   </h1>
                   {user?.role && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-linear-to-r from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/30">
                       {user.role === "Admin" && <Shield className="w-3 h-3" />}
                       {user.role === "Faculty" && (
                         <UserCheck className="w-3 h-3" />

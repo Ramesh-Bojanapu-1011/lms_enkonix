@@ -305,19 +305,9 @@ const Assignments = () => {
         if (!file || !e.target?.result) {
           throw new Error("No file selected or file read error");
         }
-        const formData = new FormData();
-        formData.append("file", file);
 
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Upload failed");
-        }
+        // Store file as base64 data URL
+        const fileDataUrl = e.target.result as string;
 
         setAssignments((prev) =>
           prev.map((a) =>
@@ -325,7 +315,7 @@ const Assignments = () => {
               ? {
                   ...a,
                   submission: {
-                    url: data.fileUrl,
+                    url: fileDataUrl,
                     fileName: submitModal.file?.name || "submission",
                     submittedAt: new Date(),
                   },
@@ -340,7 +330,7 @@ const Assignments = () => {
           body: JSON.stringify({
             id: submitModal.assignmentId,
             submission: {
-              url: data.fileUrl,
+              url: fileDataUrl,
               fileName: submitModal.file?.name || "submission",
               submittedAt: new Date(),
             },
@@ -370,7 +360,7 @@ const Assignments = () => {
       <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 bg-white dark:bg-gray-900 ${
+          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 overflow-y-auto lg:relative lg:translate-x-0 bg-white dark:bg-gray-900 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -738,13 +728,11 @@ const Assignments = () => {
                         {assignment.submission.submittedAt.toLocaleString()}
                       </p>
                       <a
-                        href={`${assignment.submission.url}`}
-                        download
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={assignment.submission.url}
+                        download={assignment.submission.fileName}
                         className="inline-block px-4 py-2 text-sm font-semibold rounded-lg bg-orange-500 text-white hover:bg-orange-600"
                       >
-                        View Submission
+                        Download & View
                       </a>
                     </div>
                   ) : (
