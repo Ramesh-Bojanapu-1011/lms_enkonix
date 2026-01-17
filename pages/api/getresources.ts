@@ -7,6 +7,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   try {
+    await connectDB()
     const resources = await Resorces.find();
     console.log("Received resource data:", resources);
 

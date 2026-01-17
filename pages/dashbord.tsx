@@ -23,7 +23,7 @@ import {
   UserCheck,
   Users,
   Video,
-  X
+  X,
 } from "lucide-react";
 import Head from "next/head";
 import React from "react";
@@ -253,6 +253,28 @@ const dashbord = (props: Props) => {
   const [assignedTasks, setAssignedTasks] = React.useState<any[]>([]);
 
   React.useEffect(() => {
+    const fetchtodolist = async () => {
+      try {
+        const response = await fetch("/api/gettodolist");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        if (data.todolist) {
+          setTodoList(data.todolist);
+          console.log(data.todolist);
+        }
+      } catch (error) {
+        console.error("Failed to fetch:", error);
+        setResources([]);
+      }
+    };
     const fetchResources = async () => {
       try {
         const response = await fetch("/api/getresources");
@@ -275,6 +297,7 @@ const dashbord = (props: Props) => {
         setResources([]);
       }
     };
+    fetchtodolist();
     fetchResources();
   }, []);
 
@@ -506,7 +529,7 @@ const dashbord = (props: Props) => {
                         key={index}
                         onClick={() => {
                           if (action.link) {
-                            window.location.href=`${action.link}`;
+                            window.location.href = `${action.link}`;
                           }
                         }}
                         className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all duration-200 active:scale-95 bg-orange-500/10   hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200`}
