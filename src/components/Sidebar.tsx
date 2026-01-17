@@ -213,7 +213,7 @@ const Sidebar = (props: Props) => {
           `}
           title={isCollapsed ? "Logout" : "Click to logout"}
         >
-          <LogOut size={20} className="flex-shrink-0" />
+          <LogOut size={20} className="shrink-0" />
           <span
             className={`font-medium transition-opacity duration-300 ${
               isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"

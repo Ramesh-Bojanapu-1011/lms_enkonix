@@ -1,6 +1,7 @@
 import CalendarView from "@/components/Calendar";
 import Sidebar from "@/components/Sidebar";
 import TabBar from "@/components/TabBar";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   AlertCircle,
   Award,
@@ -8,30 +9,25 @@ import {
   BookOpen,
   Calendar,
   ChevronDown,
-  Circle,
   Clock,
-  FileText,
+  GraduationCap,
   MapPin,
+  Menu,
   MessageSquare,
   Pencil,
   Pin,
+  Plus,
+  Shield,
   TrendingUp,
   Upload,
-  Users,
-  Image,
-  File,
-  Video,
-  X,
-  Plus,
-  Menu,
-  Shield,
-  GraduationCap,
   UserCheck,
+  Users,
+  Video,
+  X
 } from "lucide-react";
+import Head from "next/head";
 import React from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis } from "recharts";
-import Head from "next/head";
-import { useAuth } from "@/contexts/AuthContext";
 
 type Props = {};
 interface TodoProps {
@@ -510,7 +506,7 @@ const dashbord = (props: Props) => {
                         key={index}
                         onClick={() => {
                           if (action.link) {
-                            window.open(action.link);
+                            window.location.href=`${action.link}`;
                           }
                         }}
                         className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all duration-200 active:scale-95 bg-orange-500/10   hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200`}

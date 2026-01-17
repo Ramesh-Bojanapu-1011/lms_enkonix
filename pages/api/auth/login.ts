@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectDB } from "@/data/database/mangodb";
-import users from "@/data/models/users";
+import users from "@/data/models/user";
 
 type User = {
   email: string;

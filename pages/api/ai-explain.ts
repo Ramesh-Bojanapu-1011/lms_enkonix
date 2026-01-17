@@ -13,7 +13,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData>,
 ) {
   if (req.method !== "POST") {
     return res
@@ -43,7 +43,7 @@ export default async function handler(
 
     // Call Google Custom Search API
     const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(
-      searchQuery
+      searchQuery,
     )}&num=10`;
     console.log("Fetching Google Search API:", searchUrl);
 
@@ -78,7 +78,7 @@ export default async function handler(
 async function processGoogleResults(
   data: any,
   title: string,
-  content: string
+  content: string,
 ): Promise<{
   answer: string;
   explanation: string;
@@ -161,7 +161,11 @@ async function processGoogleResults(
 
         // Extract explanation paragraphs from content
         if (!extractedExplanation) {
-          extractedExplanation = extractExplanationFromHTML(html, title, content);
+          extractedExplanation = extractExplanationFromHTML(
+            html,
+            title,
+            content,
+          );
         }
 
         // Extract code if not found yet
@@ -213,7 +217,11 @@ async function processGoogleResults(
   };
 }
 
-function extractExplanationFromHTML(html: string, title: string, content: string): string {
+function extractExplanationFromHTML(
+  html: string,
+  title: string,
+  content: string,
+): string {
   // Extract meaningful explanation paragraphs from HTML
   const cleanHTML = html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -247,8 +255,9 @@ function extractExplanationFromHTML(html: string, title: string, content: string
 
       // Clean and combine paragraphs
       let explanation = paragraphs
-        .map(p => 
-          p.replace(/<[^>]+>/g, " ")
+        .map((p) =>
+          p
+            .replace(/<[^>]+>/g, " ")
             .replace(/&lt;/g, "<")
             .replace(/&gt;/g, ">")
             .replace(/&amp;/g, "&")
@@ -256,9 +265,9 @@ function extractExplanationFromHTML(html: string, title: string, content: string
             .replace(/&#39;/g, "'")
             .replace(/&nbsp;/g, " ")
             .replace(/\s+/g, " ")
-            .trim()
+            .trim(),
         )
-        .filter(p => p.length > 50 && p.length < 500)
+        .filter((p) => p.length > 50 && p.length < 500)
         .slice(0, 5)
         .join(" ");
 
@@ -268,8 +277,8 @@ function extractExplanationFromHTML(html: string, title: string, content: string
       const keywords = (title + " " + content).toLowerCase().split(/\s+/);
       const explanationLower = explanation.toLowerCase();
       let relevance = 0;
-      
-      keywords.forEach(keyword => {
+
+      keywords.forEach((keyword) => {
         if (keyword.length > 3 && explanationLower.includes(keyword)) {
           relevance++;
         }
@@ -282,7 +291,11 @@ function extractExplanationFromHTML(html: string, title: string, content: string
       if (explanationLower.includes("syntax")) relevance += 1;
       if (explanationLower.includes("output")) relevance += 1;
 
-      if (relevance > maxRelevance && explanation.length >= 200 && explanation.length <= 1200) {
+      if (
+        relevance > maxRelevance &&
+        explanation.length >= 200 &&
+        explanation.length <= 1200
+      ) {
         maxRelevance = relevance;
         bestExplanation = explanation;
       }
@@ -473,7 +486,7 @@ function detectLanguage(title: string, content: string): string {
 function generateSampleCode(
   title: string,
   content: string,
-  language: string
+  language: string,
 ): string {
   const lowerTitle = title.toLowerCase();
   const lowerContent = content.toLowerCase();
@@ -560,4 +573,3 @@ const data = [1, 2, 3, 4, 5];
 const output = solveProblem(data);
 console.log(output);`;
 }
- 

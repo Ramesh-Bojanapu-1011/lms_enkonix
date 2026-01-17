@@ -39,10 +39,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent({ Component, pageProps, router }: AppProps) {
   const isLoginPage = router.pathname === "/login";
+  const isRegisterPage = router.pathname === "/register";
   const isApiRoute = router.pathname.startsWith("/api");
 
   // Don't protect API routes or login page
-  if (isApiRoute || isLoginPage) {
+  if (isApiRoute || isLoginPage || isRegisterPage) {
     return <Component {...pageProps} />;
   }
 

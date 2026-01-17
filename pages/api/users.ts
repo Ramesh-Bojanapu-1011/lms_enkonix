@@ -1,5 +1,5 @@
 import { connectDB } from "@/data/database/mangodb";
-import users from "@/data/models/users";
+import users from "@/data/models/user";
 import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
